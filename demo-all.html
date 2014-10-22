@@ -61,15 +61,15 @@
         <div id="content">
             <form is="at-form-ajax" action="test" method="post">
                 <div>                    
-                    <at-form-field required>
+                    <at-form-field>
                       <label>at-form-field: </label>
-                      <input placeholder="at-form-field placeholder" required></input>
+                      <input name="name1" placeholder="at-form-field placeholder" required></input>
                     </at-form-field>
                 </div>
                 
                 <div>
                     <label>at-form-checkbox: </label>
-                    <at-form-checkbox value="true"></at-form-checkbox>
+                    <at-form-checkbox name="name2" value="true"></at-form-checkbox>
                 </div>
                 
                 <input type="submit">

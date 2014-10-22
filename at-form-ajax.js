@@ -206,6 +206,8 @@
             //else if(/select*/.exec(elementTag)) {
             else if (elementTag === 'select') {
                  elementValue = parseSelectElementValues(element);
+            } if (elementTag === 'at-form-checkbox'){
+                 elementValue = element.value;
             }
     
             return elementValue;
@@ -225,7 +227,8 @@
             formElements = Array.prototype.slice.call(formElements);
             formElements = formElements.concat(Array.prototype.slice.call(form.getElementsByTagName('select')));
             formElements = formElements.concat(Array.prototype.slice.call(form.getElementsByTagName('textarea')));
-    
+            formElements = formElements.concat(Array.prototype.slice.call(form.getElementsByTagName('at-form-checkbox')));
+
             formElements.forEach(function(formElement){
                 var key = formElement.name,
                     val = parseElementValue(formElement);
@@ -238,7 +241,7 @@
             Object.keys(customElementsData).forEach(function(fieldName) {   
                 formObj[fieldName] = customElementsData[fieldName]; 
             });
-    
+            debugger;
             return formObj;
         },
     
