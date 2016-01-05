@@ -19,6 +19,7 @@
 
 <template>
     <at-core-theme></at-core-theme>
+    <at-core-activity id="atFormAjaxSchemaActivity" url="{{schemaUrl}}" auto></at-core-activity>
     <at-core-activity id="atFormAjaxActivity" url="{{url}}" method="POST"></at-core-activity>
     <at-core-form id="atFormAjaxForm"></at-core-form>
 
@@ -37,6 +38,10 @@ Polymer({
             type: Boolean
         },
         url: {
+            type: String,
+            value: ""
+        },
+        schemaUrl: {
             type: String,
             value: ""
         },
@@ -61,6 +66,13 @@ Polymer({
 
         var self = this;
 
+        this.$.atFormAjaxSchemaActivity.addEventListener("response", function (e) {
+            if(e.detail.ErrorCode == 0){
+                self.schema = e.detail.Data.form.schema;
+                self.url = e.detail.Data.form.url;
+            }
+        });
+        
         this.$.atFormAjaxForm.addEventListener("response", function (e) {
             debugger;
         });
