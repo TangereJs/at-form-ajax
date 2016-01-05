@@ -62,6 +62,7 @@ Polymer({
     },
 
     ready: function () {
+        console.log("Loaded component");
         this._afterReady = true;
 
         var self = this;
@@ -86,8 +87,8 @@ Polymer({
             if(self.mode.toLowerCase() == "formdata"){
                 postData = new FormData();
 
-                for (var key in self.schema.schema.properties) {
-                    if (self.schema.schema.properties.hasOwnProperty(key)) {
+                for (var key in self.schema.properties) {
+                    if (self.schema.properties.hasOwnProperty(key)) {
                             formData.append(key, self.$.atFormAjaxForm.data[key]);
                     }
                 }
@@ -96,8 +97,8 @@ Polymer({
             }else{
                 self.$.atFormAjaxActivity.contentType = "application/json;odata=verbose";
                 
-                for (var key in self.schema.schema.properties) {
-                    if (self.schema.schema.properties.hasOwnProperty(key)) {
+                for (var key in self.schema.properties) {
+                    if (self.schema.properties.hasOwnProperty(key)) {
                          postData[key] = self.$.atFormAjaxForm.data[key];
                     }
                 }

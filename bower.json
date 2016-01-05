@@ -1,6 +1,6 @@
 {
   "name": "at-form-ajax",
-  "version": "0.0.1.69",
+  "version": "0.0.1.85",
   "private": true,
   "dependencies": {
     "polymer": "Polymer/polymer#master"
