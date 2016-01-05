@@ -5,81 +5,99 @@
 
 <dom-module id="at-form-ajax">
 
-    <style>
-        :host {
-            position: relative;
-            width: 100%;
-            display: block;
-        }
+<style>
+    :host {
+        position: relative;
+        width: 100%;
+        display: block;
+    }
 
-        .button-wrapper{
-            margin-top:10px;
-        }
-    </style>
+    .button-wrapper{
+        margin-top:10px;
+    }
+</style>
 
-    <template>
-        <at-core-theme></at-core-theme>
-        <at-core-activity id="atFormAjaxActivity" url="{{url}}" method="POST"></at-core-activity>
-        <at-core-form id="atFormAjaxForm"></at-core-form>
+<template>
+    <at-core-theme></at-core-theme>
+    <at-core-activity id="atFormAjaxActivity" url="{{url}}" method="POST"></at-core-activity>
+    <at-core-form id="atFormAjaxForm"></at-core-form>
 
-        <div class="button-wrapper">
-            <button id="btnSubmitForm" type="button"><at-carbon-icon icon="now:checkmark"></at-carbon-icon></button>
-        </div>
-    </template>
+    <div class="button-wrapper">
+        <button id="btnSubmitForm" type="button"><at-carbon-icon icon="now:checkmark"></at-carbon-icon></button>
+    </div>
+</template>
 </dom-module>
 
 <script>
-    Polymer({
-        is: "at-form-ajax",
-        _scopeCssViaAttr: true,
-        properties: {
-            _afterReady: {
-                type: Boolean
-            },
-            url: {
-                type: String,
-                value: ""
-            },
-            schema: {
-                type: Object,
-                observer: "schemaChanged"
-            }
+Polymer({
+    is: "at-form-ajax",
+    _scopeCssViaAttr: true,
+    properties: {
+        _afterReady: {
+            type: Boolean
         },
-
-        schemaChanged: function () {
-            this.$.atFormAjaxForm.schema = this.schema;
+        url: {
+            type: String,
+            value: ""
         },
+        schema: {
+            type: Object,
+            observer: "schemaChanged"
+        },
+        //Mode should be either json or formdata
+        //default value is json
+        mode: {
+            type: String,
+            value: "json"
+        }
+    },
 
-        ready: function () {
-            this._afterReady = true;
+    schemaChanged: function () {
+        this.$.atFormAjaxForm.schema = this.schema;
+    },
 
-            var self = this;
+    ready: function () {
+        this._afterReady = true;
 
-            this.$.atFormAjaxForm.addEventListener("response", function (e) {
-                debugger;
-            });
+        var self = this;
 
-            this.$.atFormAjaxForm.addEventListener("data-changed", function (e) {
-                self.$.btnSubmitForm.disabled = !this.valid;
-            });
+        this.$.atFormAjaxForm.addEventListener("response", function (e) {
+            debugger;
+        });
 
-            this.$.btnSubmitForm.addEventListener("click", function (e) {
-                var formData = new FormData();
+        this.$.atFormAjaxForm.addEventListener("data-changed", function (e) {
+            self.$.btnSubmitForm.disabled = !this.valid;
+        });
+
+        this.$.btnSubmitForm.addEventListener("click", function (e) {
+            var postData = {};
+            if(self.mode.toLowerCase() == "formdata"){
+                postData = new FormData();
+
+                for (var key in self.schema.schema.properties) {
+                    if (self.schema.schema.properties.hasOwnProperty(key)) {
+                            formData.append(key, self.$.atFormAjaxForm.data[key]);
+                    }
+                }
+                
+                //self.$.atFormAjaxActivity.contentType = null;
+            }else{
+                self.$.atFormAjaxActivity.contentType = "application/json;odata=verbose";
                 
                 for (var key in self.schema.schema.properties) {
                     if (self.schema.schema.properties.hasOwnProperty(key)) {
-                        formData.append(key, self.$.atFormAjaxForm.data[key]);
+                         postData[key] = self.$.atFormAjaxForm.data[key];
                     }
                 }
+            }
 
-                //self.$.atFormAjaxActivity.params = null;
-                self.$.atFormAjaxActivity.body = formData;
-                //self.$.atFormAjaxActivity.contentType = null;
-                self.$.atFormAjaxActivity.generateRequest();
-            });
+            //self.$.atFormAjaxActivity.params = null;
+            self.$.atFormAjaxActivity.body = postData;
+            self.$.atFormAjaxActivity.generateRequest();
+        });
 
-            this.$.btnSubmitForm.disabled = !this.$.atFormAjaxForm.valid;
-        }
-    });
+        this.$.btnSubmitForm.disabled = !this.$.atFormAjaxForm.valid;
+    }
+});
 </script>
 
