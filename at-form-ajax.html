@@ -14,22 +14,39 @@
 
     .button-wrapper{
         margin-top:10px;
+        text-align: center;
+    }
+
+    button[disabled]{
+        background-color: #eee;
+        border: 1px solid #ababab;
+        color: #ababab;
+        cursor: default;
+        filter: progid:DXImageTransform.Microsoft.Gradient(GradientType=0, startColorstr='#ffeeeeee', endColorstr='#ffeeeeee');
+        background: -webkit-gradient(linear, 0 0, 0 100%, from(rgba(238, 238, 238, 1.0)), to(rgba(238, 238, 238, 1.0)));
+        background: -moz-linear-gradient(top, rgba(238, 238, 238, 1.0), rgba(238, 238, 238, 1.0));
+        text-shadow: none;
+        -webkit-box-shadow: none;
+        -moz-box-shadow: none;
+        box-shadow: none;
     }
 </style>
 
 <template>
     <at-core-theme></at-core-theme>
-    <at-core-activity id="atFormAjaxSchemaActivity" url="{{schemaUrl}}" auto></at-core-activity>
-    <at-core-activity id="atFormAjaxActivity" url="{{url}}" method="POST"></at-core-activity>
+    <at-core-activity id="atFormAjaxSchemaActivity" url="{{schemaUrl}}" auto indicator></at-core-activity>
+    <at-core-activity id="atFormAjaxActivity" url="{{url}}" method="POST" indicator></at-core-activity>
     <at-core-form id="atFormAjaxForm"></at-core-form>
 
-    <div class="button-wrapper">
-        <button id="btnSubmitForm" type="button"><at-carbon-icon icon="now:checkmark"></at-carbon-icon></button>
+    <div id="btnWrapper" class="button-wrapper" style="display:none">
+        <!--<button id="btnSubmitForm" type="button"><at-carbon-icon icon="now:checkmark"></at-carbon-icon></button>-->
+        <button id="btnSubmitForm" type="button">Submit</button>
     </div>
 </template>
 </dom-module>
 
 <script>
+// On POST response, component will fire "at-form-ajax-post-response" event with e.detail as a value
 Polymer({
     is: "at-form-ajax",
     _scopeCssViaAttr: true,
@@ -57,12 +74,14 @@ Polymer({
         }
     },
 
-    schemaChanged: function () {
-        this.$.atFormAjaxForm.schema = this.schema;
+    schemaChanged: function (newValue, oldValue) {
+        this.fire("at-form-ajax-schema-changed", { schema: newValue });
+
+        this.$.btnWrapper.style.display = "none";
+        this.$.atFormAjaxForm.schema = newValue;
     },
 
     ready: function () {
-        console.log("Loaded component");
         this._afterReady = true;
 
         var self = this;
@@ -74,8 +93,14 @@ Polymer({
             }
         });
         
-        this.$.atFormAjaxForm.addEventListener("response", function (e) {
-            debugger;
+        this.$.atFormAjaxActivity.addEventListener("response", function (e) {
+            self.fire("at-form-ajax-post-response", { value: e.detail });
+            self.$.atFormAjaxForm.disabled = false;
+            self.$.btnSubmitForm.disabled = !self.$.atFormAjaxForm.valid;
+        });
+
+        this.$.atFormAjaxForm.addEventListener("at-core-form-rendered", function () {
+            self.$.btnWrapper.style.display = "block";
         });
 
         this.$.atFormAjaxForm.addEventListener("data-changed", function (e) {
@@ -84,6 +109,9 @@ Polymer({
 
         this.$.btnSubmitForm.addEventListener("click", function (e) {
             var postData = {};
+            self.$.atFormAjaxForm.disabled = true;
+            self.$.btnSubmitForm.disabled = true;
+
             if(self.mode.toLowerCase() == "formdata"){
                 postData = new FormData();
 
@@ -109,7 +137,7 @@ Polymer({
             self.$.atFormAjaxActivity.generateRequest();
         });
 
-        this.$.btnSubmitForm.disabled = !this.$.atFormAjaxForm.valid;
+        this.$.btnSubmitForm.disabled = true;
     }
 });
 </script>
