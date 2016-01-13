@@ -96,7 +96,7 @@
         if (e.detail.ErrorCode == 0) {
           self.schema = e.detail.Data.form.schema;
           self.url = e.detail.Data.form.url;
-          self.formSchema = e.detail.form; // save complete form definition as well
+          self.formDefinition = e.detail.Data.form; // save complete form definition as well               
         }
       });
 
