@@ -1,0 +1,269 @@
+<link rel="import" href="../at-core-theme/at-core-theme.html">
+<link rel="import" href="../at-core-form/at-core-form.html">
+<link rel="import" href="../at-core-activity/at-core-activity.html">
+<link rel="import" href="../at-carbon-icon/at-carbon-icon.html">
+<link rel="import" href="../at-carbon-alert/at-carbon-alert.html">
+
+<dom-module id="at-form-ajax">
+    <style>
+        :host {
+            position: relative;
+            width: 100%;
+            display: block;
+        }
+
+        .button-wrapper {
+            margin-top: 10px;
+            text-align: center;
+        }
+
+        button[disabled] {
+            background-color: #eee;
+            border: 1px solid #ababab;
+            color: #ababab;
+            cursor: default;
+            filter: progid: DXImageTransform.Microsoft.Gradient(GradientType=0, startColorstr='#ffeeeeee', endColorstr='#ffeeeeee');
+            background: -webkit-gradient(linear, 0 0, 0 100%, from(rgba(238, 238, 238, 1.0)), to(rgba(238, 238, 238, 1.0)));
+            background: -moz-linear-gradient(top, rgba(238, 238, 238, 1.0), rgba(238, 238, 238, 1.0));
+            text-shadow: none;
+            -webkit-box-shadow: none;
+            -moz-box-shadow: none;
+            box-shadow: none;
+        }
+    </style>
+
+    <template>
+        <at-core-theme></at-core-theme>
+        <at-carbon-alert id="invalidMessage">Please correct the marked fields with error(s) before submitting the form.</at-carbon-alert>
+        <at-core-activity id="atFormAjaxSchemaActivity" url="{{schemaUrl}}" auto indicator on-response="atFormAjaxSchemaActivityResponse"></at-core-activity>
+        <at-core-activity id="atFormAjaxActivity" url="{{postUrl}}" method="POST" indicator on-response="atFormAjaxActivityResponse" on-error="atFormAjaxActivityError"></at-core-activity>
+        <at-core-form id="atFormAjaxForm" on-at-core-form-rendered="atFormAjaxFormRendered" on-data-changed="atFormAjaxFormDataChanged"></at-core-form>
+
+        <div id="btnWrapper" class="button-wrapper" style="display:none">
+            <!--<button id="btnSubmitForm" type="button"><at-carbon-icon icon="now:checkmark"></at-carbon-icon></button>-->
+            <button id="btnSubmitForm" type="button">Submit</button>
+        </div>
+    </template>
+</dom-module>
+
+<script>
+  // On POST response, component will fire "at-form-ajax-post-response" event with e.detail as a value
+    Polymer({
+        is: "at-form-ajax",
+        _scopeCssViaAttr: true,
+        properties: {
+            _afterReady: {
+                type: Boolean
+            },
+            schemaUrl: {
+                type: String,
+                value: ""
+            },
+            schema: {
+                type: Object,
+                observer: "schemaChanged"
+            },
+            postUrl: {
+                type: String,
+                value: ""
+            },
+            postData: {
+                type: Object
+            },
+            formDefinition: {
+                type: Object
+            },
+            //Mode should be either json or formdata
+            //default value is json
+            mode: {
+                type: String,
+                value: "json"
+            }
+        },
+
+        schemaChanged: function (newValue, oldValue) {
+            this.fire("at-form-ajax-schema-changed", {
+                schema: newValue
+            });
+
+            this.$.btnWrapper.style.display = "none";
+            this.$.atFormAjaxForm.schema = newValue;
+        },
+
+
+        atFormAjaxFormRendered: function () {
+            this.$.btnWrapper.style.display = "block";
+            //this.$.btnSubmitForm.disabled = !this.$.atFormAjaxForm.valid;
+        },
+
+        atFormAjaxSchemaActivityResponse: function (e) {
+            if (e.detail.ErrorCode == 0) {
+                this.schema = e.detail.Data.form.schema;
+                this.postUrl = e.detail.Data.form.url;
+                this.formDefinition = e.detail.Data.form; // save complete form definition as well
+            }
+        },
+
+        atFormAjaxActivityResponse: function (e) {
+            this.fire("at-form-ajax-post-response", {
+                value: e.detail
+            });
+            this.$.atFormAjaxForm.disabled = false;
+
+            //this.$.btnSubmitForm.disabled = !this.$.atFormAjaxForm.valid;
+        },
+
+        atFormAjaxActivityError: function (e) {
+            this.$.atFormAjaxForm.disabled = false;
+        },
+
+        atFormAjaxFormDataChanged: function (e) {
+            //this.$.btnSubmitForm.disabled = !this.$.atFormAjaxForm.valid;
+        },
+
+
+        ready: function () {
+            this._afterReady = true;
+
+            var self = this;
+
+            this.$.btnSubmitForm.addEventListener("click", function (e) {
+
+                if (!self.$.atFormAjaxForm.validate()) {
+                    self.$.invalidMessage.open();
+                    return;
+                }
+
+                self.postData = {};
+                self.$.atFormAjaxForm.disabled = true;
+                //self.$.btnSubmitForm.disabled = true;
+
+                //if (self.mode.toLowerCase() == "formdata") {
+                //    self.postData = new FormData();
+
+                //    for (var key in self.schema.properties) {
+                //        if (self.schema.properties.hasOwnProperty(key)) {
+                //            self.postData.append(key, self.$.atFormAjaxForm.data[key]);
+                //        }
+                //    }
+
+                //    //self.$.atFormAjaxActivity.contentType = null;
+                //} else {
+                //    self.$.atFormAjaxActivity.contentType = "application/json;odata=verbose";
+
+                //    for (var key in self.schema.properties) {
+                //        if (self.schema.properties.hasOwnProperty(key)) {
+                //            self.postData[key] = self.$.atFormAjaxForm.data[key];
+                //        }
+                //    }
+                //}
+
+                ////self.$.atFormAjaxActivity.params = null;
+                //self.$.atFormAjaxActivity.body = self.postData;
+                //self.$.atFormAjaxActivity.generateRequest();
+                var formData = new FormData();
+                for (var key in self.schema.properties) {
+                    self.postData = new FormData();
+                    if (self.schema.properties.hasOwnProperty(key)) {
+                        if (self.schema.properties[key].xtype == "file") {
+                            var validFiles = self.$.atFormAjaxForm.data[key].valid;
+                            for (var i = 0; i < validFiles.length; i++) {
+                                formData.append(validFiles[i].name, validFiles[i]);
+                            }
+                        } else {
+                            formData.append(key, self.$.atFormAjaxForm.data[key]);
+                        }
+                    }
+                }
+
+                //var fData = new FormData();
+
+                //fData.append("username", "Groucho");
+                //fData.append("accountnum", 123456); // number 123456 is immediately converted to a string "123456"
+
+                //// HTML file input, chosen by user
+                //formData.append("userfile", fileInputElement.files[0]);
+
+                //// JavaScript file-like object
+                //var content = '<a id="a"><b id="b">hey!</b></a>'; // the body of the new file...
+                //var blob = new Blob([content], { type: "text/xml" });
+
+                //formData.append("webmasterfile", blob);
+
+                //var request = new XMLHttpRequest();
+                //request.open("POST", self.postUrl, true);
+                //request.send(fData);
+
+                //console.log("jQuery ajax");
+                $.ajax({
+                    url: self.postUrl,
+                    type: "POST",
+                    data: formData,
+                    processData: false,  // tell jQuery not to process the data
+                    contentType: false   // tell jQuery not to set contentType
+                });
+
+                //var fd = new FormData(self.$.atFormAjaxForm);
+                //console.log("XMLHttpRequest open->send");
+                var request = new XMLHttpRequest();
+                request.open("POST", self.postUrl);
+                request.send(formData);
+
+                //$.ajax({
+                //    url: self.postUrl,
+                //    type: "POST",
+                //    data: formData,
+                //    headers: {
+                //        'Content-Type': 'multipart/form-data'
+                //    },
+                //    processData: false,  // tell jQuery not to process the data
+                //    contentType: false   // tell jQuery not to set contentType
+                //});
+
+                //$.ajax({
+                //    url: self.postUrl,
+                //    type: "POST",
+                //    dataType: 'json',
+                //    data: formData,
+                //    cache: false,
+                //    contentType: false,
+                //    processData: false,
+                //    forceSync: false,
+                //    xhr: function () {
+                //        var xhrobj = $.ajaxSettings.xhr();
+                //        if (xhrobj.upload) {
+                //            xhrobj.upload.addEventListener('progress', function (event) {
+                //                var percent = 0;
+                //                var position = event.loaded || event.position;
+                //                var total = event.total || e.totalSize;
+                //                if (event.lengthComputable) {
+                //                    percent = Math.ceil(position / total * 100);
+                //                }
+
+                //                //widget.settings.onUploadProgress.call(widget.element, widget.queuePos, percent);
+                //            }, false);
+                //        }
+
+                //        return xhrobj;
+                //    },
+                //    success: function (data, message, xhr) {
+                //        debugger;
+                //        //widget.settings.onUploadSuccess.call(widget.element, widget.queuePos, data);
+                //    },
+                //    error: function (xhr, status, errMsg) {
+                //        debugger;
+                //        //widget.settings.onUploadError.call(widget.element, widget.queuePos, errMsg);
+                //    },
+                //    complete: function (xhr, textStatus) {
+                //        debugger;
+                //        //widget.processQueue();
+                //    }
+                //});
+
+
+                //this.$.btnSubmitForm.disabled = true;
+
+            });
+        }
+    });
+</script>
