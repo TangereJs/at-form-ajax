@@ -1,9 +1,8 @@
 {
   "name": "at-form-ajax",
-  "version": "0.0.1.287",
+  "version": "0.0.1.286",
   "private": true,
   "dependencies": {
-    "polymer": "Polymer/polymer#master",
-    "at-carbon-action-button": "TangereJs/at-carbon-action-button#0.8-preview"
+    "polymer": "Polymer/polymer#master"
   }
 }
