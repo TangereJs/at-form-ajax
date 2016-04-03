@@ -3,179 +3,162 @@
 <link rel="import" href="../at-core-activity/at-core-activity.html">
 <link rel="import" href="../at-carbon-icon/at-carbon-icon.html">
 <link rel="import" href="../at-carbon-alert/at-carbon-alert.html">
+<link rel="import" href="../at-carbon-action-button/at-carbon-action-button.html">
 
 <dom-module id="at-form-ajax">
-    <style>
-        :host {
-            position: relative;
-            width: 100%;
-            display: block;
-        }
 
-        .button-wrapper {
-            margin-top: 10px;
-            text-align: center;
-        }
+  <style>
+    :host {
+      position: relative;
+      width: 100%;
+      display: block;
+    }
 
-        button[disabled] {
-            background-color: #eee;
-            border: 1px solid #ababab;
-            color: #ababab;
-            cursor: default;
-            filter: progid: DXImageTransform.Microsoft.Gradient(GradientType=0, startColorstr='#ffeeeeee', endColorstr='#ffeeeeee');
-            background: -webkit-gradient(linear, 0 0, 0 100%, from(rgba(238, 238, 238, 1.0)), to(rgba(238, 238, 238, 1.0)));
-            background: -moz-linear-gradient(top, rgba(238, 238, 238, 1.0), rgba(238, 238, 238, 1.0));
-            text-shadow: none;
-            -webkit-box-shadow: none;
-            -moz-box-shadow: none;
-            box-shadow: none;
-        }
-    </style>
+    .button-wrapper {
+      margin-top: 10px;
+      text-align: center;
+    }
 
-    <template>
-        <at-core-theme></at-core-theme>
-        <at-carbon-alert id="invalidMessage">Please correct the marked fields with error(s) before submitting the form.</at-carbon-alert>
-        <at-core-activity id="atFormAjaxSchemaActivity" url="{{schemaUrl}}" auto indicator on-response="atFormAjaxSchemaActivityResponse"></at-core-activity>
-        <at-core-activity id="atFormAjaxActivity" url="{{postUrl}}" method="POST" indicator on-response="atFormAjaxActivityResponse" on-error="atFormAjaxActivityError"></at-core-activity>
-        <at-core-form id="atFormAjaxForm" on-at-core-form-rendered="atFormAjaxFormRendered" on-data-changed="atFormAjaxFormDataChanged"></at-core-form>
+    button[disabled] {
+      background-color: #eee;
+      border: 1px solid #ababab;
+      color: #ababab;
+      cursor: default;
+      filter: progid: DXImageTransform.Microsoft.Gradient(GradientType=0, startColorstr='#ffeeeeee', endColorstr='#ffeeeeee');
+      background: -webkit-gradient(linear, 0 0, 0 100%, from(rgba(238, 238, 238, 1.0)), to(rgba(238, 238, 238, 1.0)));
+      background: -moz-linear-gradient(top, rgba(238, 238, 238, 1.0), rgba(238, 238, 238, 1.0));
+      text-shadow: none;
+      -webkit-box-shadow: none;
+      -moz-box-shadow: none;
+      box-shadow: none;
+    }
+  </style>
 
-        <div id="btnWrapper" class="button-wrapper" style="display:none">
-            <!--<button id="btnSubmitForm" type="button"><at-carbon-icon icon="now:checkmark"></at-carbon-icon></button>-->
-            <button id="btnSubmitForm" type="button">Submit</button>
-        </div>
-    </template>
+  <template>
+    <at-core-theme></at-core-theme>
+    <at-carbon-alert id="invalidMessage">Please correct the marked fields with error(s) before submitting the form.</at-carbon-alert>
+    <at-core-activity id="atFormAjaxSchemaActivity" url="{{schemaUrl}}" auto indicator></at-core-activity>
+    <at-core-activity id="atFormAjaxActivity" url="{{url}}" method="POST" indicator></at-core-activity>
+    <at-core-form id="atFormAjaxForm"></at-core-form>
+
+    <div id="btnWrapper" class="button-wrapper" style="display:none">
+      <!--<button id="btnSubmitForm" type="button"><at-carbon-icon icon="now:checkmark"></at-carbon-icon></button>-->
+      <at-carbon-action-button id="btnSubmitForm" xtype="submit"></at-carbon-action-button>
+    </div>
+  </template>
 </dom-module>
 
 <script>
-    // On POST response, component will fire "at-form-ajax-post-response" event with e.detail as a value
-    Polymer({
-        is: "at-form-ajax",
-        _scopeCssViaAttr: true,
-        properties: {
-            _afterReady: {
-                type: Boolean
-            },
-            schemaUrl: {
-                type: String,
-                value: ""
-            },
-            schema: {
-                type: Object,
-                observer: "schemaChanged"
-            },
-            postUrl: {
-                type: String,
-                value: ""
-            },
-            postData: {
-                type: Object
-            },
-            formDefinition: {
-                type: Object
-            },
-            //Mode should be either json or formdata
-            //default value is json
-            mode: {
-                type: String,
-                value: "json"
-            }
-        },
+  // On POST response, component will fire "at-form-ajax-post-response" event with e.detail as a value
+  Polymer({
+    is: "at-form-ajax",
+    _scopeCssViaAttr: true,
+    properties: {
+      _afterReady: {
+        type: Boolean
+      },
+      url: {
+        type: String,
+        value: ""
+      },
+      schemaUrl: {
+        type: String,
+        value: ""
+      },
+      schema: {
+        type: Object,
+        observer: "schemaChanged"
+      },
+      formDefinition: {
+        type: Object
+      },
+      //Mode should be either json or formdata
+      //default value is json
+      mode: {
+        type: String,
+        value: "json"
+      }
+    },
 
-        schemaChanged: function (newValue, oldValue) {
-            this.fire("at-form-ajax-schema-changed", {
-                schema: newValue
-            });
+    schemaChanged: function (newValue, oldValue) {
+      this.fire("at-form-ajax-schema-changed", {
+        schema: newValue
+      });
 
-            this.$.btnWrapper.style.display = "none";
-            this.$.atFormAjaxForm.schema = newValue;
-        },
+      this.$.btnWrapper.style.display = "none";
+      this.$.atFormAjaxForm.schema = newValue;
+    },
 
 
-        atFormAjaxFormRendered: function () {
-            this.$.btnWrapper.style.display = "block";
-            //this.$.btnSubmitForm.disabled = !this.$.atFormAjaxForm.valid;
-        },
+    ready: function () {
+      this._afterReady = true;
 
-        atFormAjaxSchemaActivityResponse: function (e) {
-            if (e.detail.ErrorCode == 0) {
-                this.schema = e.detail.Data.form.schema;
-                if (this.postUrl.length <= 0) {
-                    this.postUrl = e.detail.Data.form.url;
-                }
-                this.formDefinition = e.detail.Data.form; // save complete form definition as well
-            }
-        },
+      var self = this;
 
-        atFormAjaxActivityResponse: function (e) {
-            this.fire("at-form-ajax-post-response", {
-                value: e.detail
-            });
-            this.$.atFormAjaxForm.disabled = false;
-
-            //this.$.btnSubmitForm.disabled = !this.$.atFormAjaxForm.valid;
-        },
-
-        atFormAjaxActivityError: function (e) {
-            this.$.atFormAjaxForm.disabled = false;
-        },
-
-        atFormAjaxFormDataChanged: function (e) {
-            //this.$.btnSubmitForm.disabled = !this.$.atFormAjaxForm.valid;
-        },
-
-
-        ready: function () {
-            this._afterReady = true;
-
-            var self = this;
-
-            this.$.btnSubmitForm.addEventListener("click", function (e) {
-
-                if (!self.$.atFormAjaxForm.validate()) {
-                    self.$.invalidMessage.open();
-                    return;
-                }
-
-                self.postData = {};
-                self.$.atFormAjaxForm.disabled = true;
-                //self.$.btnSubmitForm.disabled = true;
-
-                if (self.mode.toLowerCase() == "formdata") {
-                    self.postData = new FormData();
-
-                    for (var key in self.schema.properties) {
-                        if (self.schema.properties.hasOwnProperty(key)) {
-                            var files = self.$.atFormAjaxForm.files[key];
-                            //If property is available then add files to the postData
-                            if (files) {
-                                for (var i = 0; i < files.length; i++) {
-                                    self.postData.append(files[i].name, files[i]);
-                                }
-                            } else {
-                                //TODO, probably should check if data[key] has valid/invalid (file/image) properties
-                                //and if invalid value is > 0 , abort upload action
-                                var data = self.$.atFormAjaxForm.data[key];
-                                if (!data.invalid) {
-                                    self.postData.append(key, data);
-                                }
-                            }
-                        }
-                    }
-
-                    self.$.atFormAjaxActivity.contentType = "multipart/form-data";
-                } else {
-                    self.$.atFormAjaxActivity.contentType = "application/json;odata=verbose";
-                    for (var key in self.schema.properties) {
-                        if (self.schema.properties.hasOwnProperty(key)) {
-                            self.postData[key] = self.$.atFormAjaxForm.data[key];
-                        }
-                    }
-                }
-
-                //self.$.atFormAjaxActivity.params = null;
-                self.$.atFormAjaxActivity.body = self.postData;
-                self.$.atFormAjaxActivity.generateRequest();
-            });
+      this.$.atFormAjaxSchemaActivity.addEventListener("response", function (e) {
+        if (e.detail.ErrorCode == 0) {
+          self.schema = e.detail.Data.form.schema;
+          self.url = e.detail.Data.form.url;
+          self.formDefinition = e.detail.Data.form; // save complete form definition as well
         }
-    });
+      });
+
+      this.$.atFormAjaxActivity.addEventListener("response", function (e) {
+        self.fire("at-form-ajax-post-response", {
+          value: e.detail
+        });
+        self.$.atFormAjaxForm.disabled = false;
+
+        //self.$.btnSubmitForm.disabled = !self.$.atFormAjaxForm.valid;
+
+      });
+
+      this.$.atFormAjaxForm.addEventListener("at-core-form-rendered", function () {
+        self.$.btnWrapper.style.display = "block";
+      });
+
+      this.$.atFormAjaxForm.addEventListener("data-changed", function (e) {
+        // self.$.btnSubmitForm.disabled = !this.valid;
+      });
+
+      this.$.btnSubmitForm.addEventListener("click", function (e) {
+
+        if (!self.$.atFormAjaxForm.validate()) {
+          self.$.invalidMessage.open();
+          return;
+        }
+
+        var postData = {};
+        self.$.atFormAjaxForm.disabled = true;
+        self.$.btnSubmitForm.disabled = true;
+
+        if (self.mode.toLowerCase() == "formdata") {
+          postData = new FormData();
+
+          for (var key in self.schema.properties) {
+            if (self.schema.properties.hasOwnProperty(key)) {
+              formData.append(key, self.$.atFormAjaxForm.data[key]);
+            }
+          }
+
+          //self.$.atFormAjaxActivity.contentType = null;
+          
+        } else {
+          self.$.atFormAjaxActivity.contentType = "application/json;odata=verbose";
+
+          for (var key in self.schema.properties) {
+            if (self.schema.properties.hasOwnProperty(key)) {
+              postData[key] = self.$.atFormAjaxForm.data[key];
+            }
+          }
+        }
+
+        //self.$.atFormAjaxActivity.params = null;
+        self.$.atFormAjaxActivity.body = postData;
+        self.$.atFormAjaxActivity.generateRequest();
+      });
+
+      //this.$.btnSubmitForm.disabled = true;
+    }
+  });
 </script>
