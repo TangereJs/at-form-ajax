@@ -121,7 +121,7 @@
         // self.$.btnSubmitForm.disabled = !this.valid;
       });
 
-      this.$.btnSubmitForm.addEventListener("click", function (e) {
+      this.$.btnSubmitForm.addEventListener("tap", function (e) {
 
         if (!self.$.atFormAjaxForm.validate()) {
           self.$.invalidMessage.open();
@@ -142,7 +142,7 @@
           }
 
           //self.$.atFormAjaxActivity.contentType = null;
-          
+
         } else {
           self.$.atFormAjaxActivity.contentType = "application/json;odata=verbose";
 
