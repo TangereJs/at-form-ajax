@@ -1,4 +1,5 @@
-<link rel="import" href="../at-core-theme/at-core-theme.html">
+<link rel="import" href="../tangere/tangere.html">
+<link rel="import" href="../at-theme/at-theme.html">
 <link rel="import" href="../at-core-form/at-core-form.html">
 <link rel="import" href="../at-core-activity/at-core-activity.html">
 <link rel="import" href="../at-carbon-icon/at-carbon-icon.html">
@@ -6,38 +7,36 @@
 <link rel="import" href="../at-carbon-action-button/at-carbon-action-button.html">
 
 <dom-module id="at-form-ajax">
-
- 
   <template>
-    
-     <style>
-    :host {
-      position: relative;
-      width: 100%;
-      display: block;
-    }
 
-    .button-wrapper {
-      margin-top: 10px;
-      text-align: center;
-    }
+    <style>
+      :host {
+        position: relative;
+        width: 100%;
+        display: block;
+      }
 
-    button[disabled] {
-      background-color: #eee;
-      border: 1px solid #ababab;
-      color: #ababab;
-      cursor: default;
-      filter: progid: DXImageTransform.Microsoft.Gradient(GradientType=0, startColorstr='#ffeeeeee', endColorstr='#ffeeeeee');
-      background: -webkit-gradient(linear, 0 0, 0 100%, from(rgba(238, 238, 238, 1.0)), to(rgba(238, 238, 238, 1.0)));
-      background: -moz-linear-gradient(top, rgba(238, 238, 238, 1.0), rgba(238, 238, 238, 1.0));
-      text-shadow: none;
-      -webkit-box-shadow: none;
-      -moz-box-shadow: none;
-      box-shadow: none;
-    }
-  </style>
-    
-<at-carbon-alert id="invalidMessage">Please correct the marked fields with error(s) before submitting the form.</at-carbon-alert>
+      .button-wrapper {
+        margin-top: 10px;
+        text-align: center;
+      }
+
+      button[disabled] {
+        background-color: #eee;
+        border: 1px solid #ababab;
+        color: #ababab;
+        cursor: default;
+        filter: progid: DXImageTransform.Microsoft.Gradient(GradientType=0, startColorstr='#ffeeeeee', endColorstr='#ffeeeeee');
+        background: -webkit-gradient(linear, 0 0, 0 100%, from(rgba(238, 238, 238, 1.0)), to(rgba(238, 238, 238, 1.0)));
+        background: -moz-linear-gradient(top, rgba(238, 238, 238, 1.0), rgba(238, 238, 238, 1.0));
+        text-shadow: none;
+        -webkit-box-shadow: none;
+        -moz-box-shadow: none;
+        box-shadow: none;
+      }
+    </style>
+
+    <at-carbon-alert id="invalidMessage">Please correct the marked fields with error(s) before submitting the form.</at-carbon-alert>
     <at-core-activity id="atFormAjaxSchemaActivity" url="{{schemaUrl}}" auto indicator></at-core-activity>
     <at-core-activity id="atFormAjaxActivity" url="{{url}}" method="POST" indicator></at-core-activity>
     <at-core-form id="atFormAjaxForm"></at-core-form>
@@ -81,7 +80,7 @@
       }
     },
 
-    schemaChanged: function (newValue, oldValue) {
+    schemaChanged: function(newValue, oldValue) {
       this.fire("at-form-ajax-schema-changed", {
         schema: newValue
       });
@@ -91,12 +90,12 @@
     },
 
 
-    ready: function () {
+    ready: function() {
       this._afterReady = true;
 
       var self = this;
 
-      this.$.atFormAjaxSchemaActivity.addEventListener("response", function (e) {
+      this.$.atFormAjaxSchemaActivity.addEventListener("response", function(e) {
         if (e.detail.ErrorCode == 0) {
           self.schema = e.detail.Data.form.schema;
           self.url = e.detail.Data.form.url;
@@ -104,7 +103,7 @@
         }
       });
 
-      this.$.atFormAjaxActivity.addEventListener("response", function (e) {
+      this.$.atFormAjaxActivity.addEventListener("response", function(e) {
         self.fire("at-form-ajax-post-response", {
           value: e.detail
         });
@@ -114,15 +113,15 @@
 
       });
 
-      this.$.atFormAjaxForm.addEventListener("at-core-form-rendered", function () {
+      this.$.atFormAjaxForm.addEventListener("at-core-form-rendered", function() {
         self.$.btnWrapper.style.display = "block";
       });
 
-      this.$.atFormAjaxForm.addEventListener("data-changed", function (e) {
+      this.$.atFormAjaxForm.addEventListener("data-changed", function(e) {
         // self.$.btnSubmitForm.disabled = !this.valid;
       });
 
-      this.$.btnSubmitForm.addEventListener("tap", function (e) {
+      this.$.btnSubmitForm.addEventListener("tap", function(e) {
 
         if (!self.$.atFormAjaxForm.validate()) {
           self.$.invalidMessage.open();
