@@ -1,6 +1,6 @@
 {
   "name": "at-form-ajax",
-  "version": "0.0.1.297",
+  "version": "0.0.1.305",
   "private": true,
   "dependencies": {
     "tangere": "TangereJs/tangere#0.8-preview",

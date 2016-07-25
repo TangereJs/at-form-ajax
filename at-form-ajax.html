@@ -38,6 +38,7 @@
 
     <at-carbon-alert id="invalidMessage">Please correct the marked fields with error(s) before submitting the form.</at-carbon-alert>
     <at-core-activity id="atFormAjaxSchemaActivity" url="{{schemaUrl}}" auto indicator></at-core-activity>
+    <at-core-activity id="atFormAjaxRecordActivity" auto></at-core-activity>
     <at-core-activity id="atFormAjaxActivity" url="{{url}}" method="POST" indicator></at-core-activity>
     <at-core-form id="atFormAjaxForm"></at-core-form>
 
@@ -69,6 +70,11 @@
         type: Object,
         observer: "schemaChanged"
       },
+      recordId: {
+          type: String,
+          value: "",
+          observer: 'recordIdChanged'
+      },
       formDefinition: {
         type: Object
       },
@@ -89,18 +95,43 @@
       this.$.atFormAjaxForm.schema = newValue;
     },
 
+    recordIdChanged : function(newValue, oldValue) {
+        if (this.url && newValue) {
+
+            itemId = newValue;
+            if (!this.url.endsWith("/")) {
+                itemId = "/" + itemId;
+            }
+
+            this.$.atFormAjaxRecordActivity.url = this.url + itemId;
+        }
+    },
 
     ready: function() {
       this._afterReady = true;
 
       var self = this;
 
-      this.$.atFormAjaxSchemaActivity.addEventListener("response", function(e) {
-        if (e.detail.ErrorCode == 0) {
-          self.schema = e.detail.Data.form.schema;
-          self.url = e.detail.Data.form.url;
-          self.formDefinition = e.detail.Data.form; // save complete form definition as well
-        }
+      this.$.atFormAjaxSchemaActivity.addEventListener("response", function (e) {
+
+          if (e.detail.ErrorCode == 0) {
+              self.schema = e.detail.Data.form.schema;
+              self.url = e.detail.Data.form.url;
+              self.formDefinition = e.detail.Data.form; // save complete form definition as well
+
+              if (self.url  && self.recordId) {
+                  var itemId = self.recordId;
+                  if (!self.url.endsWith("/"))
+                  {
+                      itemId = "/" + itemId;
+                  }
+                  self.$.atFormAjaxRecordActivity.url = self.url + itemId;
+              }
+          }
+      });
+
+      this.$.atFormAjaxRecordActivity.addEventListener("response", function (e) {
+          self.$.atFormAjaxForm.data = e.detail.Data;
       });
 
       this.$.atFormAjaxActivity.addEventListener("response", function(e) {
@@ -109,8 +140,12 @@
         });
         self.$.atFormAjaxForm.disabled = false;
 
-        //self.$.btnSubmitForm.disabled = !self.$.atFormAjaxForm.valid;
+        if (e.detail.ErrorCode == 0)
+        {
+            self.recordId = e.detail.Data.id;
+        }
 
+        //self.$.btnSubmitForm.disabled = !self.$.atFormAjaxForm.valid;
       });
 
       this.$.atFormAjaxForm.addEventListener("at-core-form-rendered", function() {
@@ -135,9 +170,11 @@
         if (self.mode.toLowerCase() == "formdata") {
           postData = new FormData();
 
+          postData.append("id", self.recordId);
+
           for (var key in self.schema.properties) {
             if (self.schema.properties.hasOwnProperty(key)) {
-              formData.append(key, self.$.atFormAjaxForm.data[key]);
+                postData.append(key, self.$.atFormAjaxForm.data[key]);
             }
           }
 
@@ -145,6 +182,8 @@
 
         } else {
           self.$.atFormAjaxActivity.contentType = "application/json;odata=verbose";
+
+          postData["id"] = self.recordId;
 
           for (var key in self.schema.properties) {
             if (self.schema.properties.hasOwnProperty(key)) {
