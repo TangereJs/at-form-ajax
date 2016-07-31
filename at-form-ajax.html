@@ -105,6 +105,10 @@
         },
 
         recordIdChanged: function (newValue, oldValue) {
+            if (!this._afterReady) {
+                return;
+            }
+
             if (this.url && newValue) {
 
                 itemId = newValue;
@@ -118,6 +122,10 @@
         },
 
         modeChanged: function (newValue, oldValue) {
+            if (!this._afterReady) {
+                return;
+            }
+
             if (newValue) {
                 this.mode = newValue.toLowerCase();
                 console.log("Mode changed to: " + this.mode);
