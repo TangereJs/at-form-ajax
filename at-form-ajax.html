@@ -38,7 +38,7 @@
 
     <at-carbon-alert id="invalidMessage">Please correct the marked fields with error(s) before submitting the form.</at-carbon-alert>
     <at-core-activity id="atFormAjaxSchemaActivity" url="{{schemaUrl}}" auto indicator></at-core-activity>
-    <at-core-activity id="atFormAjaxRecordActivity" auto></at-core-activity>
+    <at-core-activity id="atFormAjaxRecordActivity" indicator></at-core-activity>
     <at-core-activity id="atFormAjaxActivity" url="{{url}}" method="POST" indicator></at-core-activity>
     <at-core-form id="atFormAjaxForm"></at-core-form>
 
@@ -51,153 +51,198 @@
 
 <script>
   // On POST response, component will fire "at-form-ajax-post-response" event with e.detail as a value
-  Polymer({
-    is: "at-form-ajax",
-    _scopeCssViaAttr: true,
-    properties: {
-      _afterReady: {
-        type: Boolean
-      },
-      url: {
-        type: String,
-        value: ""
-      },
-      schemaUrl: {
-        type: String,
-        value: ""
-      },
-      schema: {
-        type: Object,
-        observer: "schemaChanged"
-      },
-      recordId: {
-          type: String,
-          value: "",
-          observer: 'recordIdChanged'
-      },
-      formDefinition: {
-        type: Object
-      },
-      //Mode should be either json or formdata
-      //default value is json
-      mode: {
-        type: String,
-        value: "json"
-      }
-    },
-
-    schemaChanged: function(newValue, oldValue) {
-      this.fire("at-form-ajax-schema-changed", {
-        schema: newValue
-      });
-
-      this.$.btnWrapper.style.display = "none";
-      this.$.atFormAjaxForm.schema = newValue;
-    },
-
-    recordIdChanged : function(newValue, oldValue) {
-        if (this.url && newValue) {
-
-            itemId = newValue;
-            if (!this.url.endsWith("/")) {
-                itemId = "/" + itemId;
+    Polymer({
+        is: "at-form-ajax",
+        _scopeCssViaAttr: true,
+        properties: {
+            _afterReady: {
+                type: Boolean
+            },
+            url: {
+                type: String,
+                value: ""
+            },
+            schemaUrl: {
+                type: String,
+                value: ""
+            },
+            schema: {
+                type: Object,
+                observer: "schemaChanged"
+            },
+            recordId: {
+                type: String,
+                value: "",
+                observer: 'recordIdChanged'
+            },
+            //Possible values: r, c, u
+            //r - read
+            //c - create
+            //u - update
+            mode: {
+                type: String,
+                value: "u",
+                observer: "modeChanged"
+            },
+            formDefinition: {
+                type: Object
+            },
+            //Post Mode should be either json or formdata
+            //default value is json
+            postMode: {
+                type: String,
+                value: "json"
             }
+        },
 
-            this.$.atFormAjaxRecordActivity.url = this.url + itemId;
-        }
-    },
+        schemaChanged: function (newValue, oldValue) {
+            this.fire("at-form-ajax-schema-changed", {
+                schema: newValue
+            });
 
-    ready: function() {
-      this._afterReady = true;
+            this.$.btnWrapper.style.display = "none";
+            this.$.atFormAjaxForm.schema = newValue;
+        },
 
-      var self = this;
+        recordIdChanged: function (newValue, oldValue) {
+            if (this.url && newValue) {
 
-      this.$.atFormAjaxSchemaActivity.addEventListener("response", function (e) {
+                itemId = newValue;
+                if (!this.url.endsWith("/")) {
+                    itemId = "/" + itemId;
+                }
 
-          if (e.detail.ErrorCode == 0) {
-              self.schema = e.detail.Data.form.schema;
-              self.url = e.detail.Data.form.url;
-              self.formDefinition = e.detail.Data.form; // save complete form definition as well
-
-              if (self.url  && self.recordId) {
-                  var itemId = self.recordId;
-                  if (!self.url.endsWith("/"))
-                  {
-                      itemId = "/" + itemId;
-                  }
-                  self.$.atFormAjaxRecordActivity.url = self.url + itemId;
-              }
-          }
-      });
-
-      this.$.atFormAjaxRecordActivity.addEventListener("response", function (e) {
-          self.$.atFormAjaxForm.data = e.detail.Data;
-      });
-
-      this.$.atFormAjaxActivity.addEventListener("response", function(e) {
-        self.fire("at-form-ajax-post-response", {
-          value: e.detail
-        });
-        self.$.atFormAjaxForm.disabled = false;
-
-        if (e.detail.ErrorCode == 0)
-        {
-            self.recordId = e.detail.Data.id;
-        }
-
-        //self.$.btnSubmitForm.disabled = !self.$.atFormAjaxForm.valid;
-      });
-
-      this.$.atFormAjaxForm.addEventListener("at-core-form-rendered", function() {
-        self.$.btnWrapper.style.display = "block";
-      });
-
-      this.$.atFormAjaxForm.addEventListener("data-changed", function(e) {
-        // self.$.btnSubmitForm.disabled = !this.valid;
-      });
-
-      this.$.btnSubmitForm.addEventListener("tap", function(e) {
-
-        if (!self.$.atFormAjaxForm.validate()) {
-          self.$.invalidMessage.open();
-          return;
-        }
-
-        var postData = {};
-        self.$.atFormAjaxForm.disabled = true;
-        self.$.btnSubmitForm.disabled = true;
-
-        if (self.mode.toLowerCase() == "formdata") {
-          postData = new FormData();
-
-          postData.append("id", self.recordId);
-
-          for (var key in self.schema.properties) {
-            if (self.schema.properties.hasOwnProperty(key)) {
-                postData.append(key, self.$.atFormAjaxForm.data[key]);
+                this.$.atFormAjaxRecordActivity.url = this.url + itemId;
+                self.$.atFormAjaxRecordActivity.generateRequest();
             }
-          }
+        },
 
-          //self.$.atFormAjaxActivity.contentType = null;
-
-        } else {
-          self.$.atFormAjaxActivity.contentType = "application/json;odata=verbose";
-
-          postData["id"] = self.recordId;
-
-          for (var key in self.schema.properties) {
-            if (self.schema.properties.hasOwnProperty(key)) {
-              postData[key] = self.$.atFormAjaxForm.data[key];
+        modeChanged: function (newValue, oldValue) {
+            if (newValue) {
+                this.mode = newValue.toLowerCase();
+                console.log("Mode changed to: " + this.mode);
+                this.$.atFormAjaxSchemaActivity.generateRequest();
             }
-          }
+        },
+
+        ready: function () {
+            this._afterReady = true;
+
+            var self = this;
+
+            this.$.atFormAjaxSchemaActivity.addEventListener("response", function (e) {
+                if (e.detail.ErrorCode == 0) {
+                    //Form should be disabled if mode is set to read
+                    self.$.atFormAjaxForm.disabled = self.mode === "r";
+
+                    if (self.mode == "c" || self.mode == "u") {
+                        //JS passes object ( schema.properties ) by reference, 
+                        //all changes made in this block will reflect to e.detail.Data.form.schema.properties
+                        var schemaProperties = e.detail.Data.form.schema.properties;
+                        if (schemaProperties) {
+                            for (var property in schemaProperties) {
+                                if (schemaProperties.hasOwnProperty(property) && schemaProperties[property].readOnly) {
+                                    delete schemaProperties[property];
+
+                                    //Faster way to do the same job, but currently not working as at-core-form can't handle undefined properties
+                                    //schema.properties[property] = undefined;
+                                }
+                            }
+                        }
+                    }
+
+                    //This line here is required so it can reset form data
+                    self.$.atFormAjaxForm._internalData = {};
+                    self.schema = e.detail.Data.form.schema;
+                    self.url = e.detail.Data.form.url;
+                    self.formDefinition = e.detail.Data.form; // save complete form definition as well
+
+                    //If mode != create we should fetch data, otherwise recordId is ignored
+                    if (self.mode != "c") {
+                        if (self.url && self.recordId) {
+                            console.log("Fetch form data for item with ID: " + self.recordId);
+                            var itemId = self.recordId;
+                            if (!self.url.endsWith("/")) {
+                                itemId = "/" + itemId;
+                            }
+                            self.$.atFormAjaxRecordActivity.url = self.url + itemId;
+                            self.$.atFormAjaxRecordActivity.generateRequest();
+                        }
+                    } else {
+                        //Clear data from the form
+                        console.log("Clear form data");
+                        //self.$.atFormAjaxForm._internalData = {};
+                    }
+                }
+            });
+
+            this.$.atFormAjaxRecordActivity.addEventListener("response", function (e) {
+                self.$.atFormAjaxForm.data = e.detail.Data;
+            });
+
+            this.$.atFormAjaxActivity.addEventListener("response", function (e) {
+                self.fire("at-form-ajax-post-response", {
+                    value: e.detail
+                });
+                self.$.atFormAjaxForm.disabled = false;
+
+                if (e.detail.ErrorCode == 0) {
+                    self.recordId = e.detail.Data.id;
+                }
+
+                //self.$.btnSubmitForm.disabled = !self.$.atFormAjaxForm.valid;
+            });
+
+            this.$.atFormAjaxForm.addEventListener("at-core-form-rendered", function () {
+                self.$.btnWrapper.style.display = "block";
+            });
+
+            this.$.atFormAjaxForm.addEventListener("data-changed", function (e) {
+                // self.$.btnSubmitForm.disabled = !this.valid;
+            });
+
+            this.$.btnSubmitForm.addEventListener("tap", function (e) {
+
+                if (!self.$.atFormAjaxForm.validate()) {
+                    self.$.invalidMessage.open();
+                    return;
+                }
+
+                var postData = {};
+                self.$.atFormAjaxForm.disabled = true;
+                self.$.btnSubmitForm.disabled = true;
+
+                if (self.postMode.toLowerCase() == "formdata") {
+                    postData = new FormData();
+
+                    postData.append("id", self.recordId);
+
+                    for (var key in self.schema.properties) {
+                        if (self.schema.properties.hasOwnProperty(key)) {
+                            postData.append(key, self.$.atFormAjaxForm.data[key]);
+                        }
+                    }
+
+                    //self.$.atFormAjaxActivity.contentType = null;
+
+                } else {
+                    self.$.atFormAjaxActivity.contentType = "application/json;odata=verbose";
+
+                    postData["id"] = self.recordId;
+
+                    for (var key in self.schema.properties) {
+                        if (self.schema.properties.hasOwnProperty(key)) {
+                            postData[key] = self.$.atFormAjaxForm.data[key];
+                        }
+                    }
+                }
+
+                //self.$.atFormAjaxActivity.params = null;
+                self.$.atFormAjaxActivity.body = postData;
+                self.$.atFormAjaxActivity.generateRequest();
+            });
+
+            //this.$.btnSubmitForm.disabled = true;
         }
-
-        //self.$.atFormAjaxActivity.params = null;
-        self.$.atFormAjaxActivity.body = postData;
-        self.$.atFormAjaxActivity.generateRequest();
-      });
-
-      //this.$.btnSubmitForm.disabled = true;
-    }
-  });
+    });
 </script>
