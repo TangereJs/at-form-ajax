@@ -43,10 +43,10 @@
     <at-core-form id="atFormAjaxForm"></at-core-form>
 
     <div id="btnWrapper" class="button-wrapper" style="display:none">
-      <!--<button id="btnSubmitForm" type="button"><at-carbon-icon icon="now:checkmark"></at-carbon-icon></button>-->
-      <at-carbon-action-button id="btnSubmitForm" xtype="submit"></at-carbon-action-button>
+        <!--<button id="btnSubmitForm" type="button"><at-carbon-icon icon="now:checkmark"></at-carbon-icon></button>-->
+        <at-carbon-action-button id="btnSubmitForm" xtype="submit"></at-carbon-action-button>
     </div>
-  </template>
+</template>
 </dom-module>
 
 <script>
@@ -101,6 +101,8 @@
             });
 
             this.$.btnWrapper.style.display = "none";
+            //TODO Hide form here
+            this.$.atFormAjaxForm.hide = true;
             this.$.atFormAjaxForm.schema = newValue;
         },
 
@@ -116,6 +118,9 @@
                     itemId = "/" + itemId;
                 }
 
+                this.$.btnWrapper.style.display = "none";
+                this.$.atFormAjaxForm.hide = true;
+
                 this.$.atFormAjaxRecordActivity.url = this.url + itemId;
                 this.$.atFormAjaxRecordActivity.generateRequest();
             }
@@ -128,7 +133,9 @@
 
             if (newValue) {
                 this.mode = newValue.toLowerCase();
-                console.log("Mode changed to: " + this.mode);
+
+                this.$.btnWrapper.style.display = "none";
+                this.$.atFormAjaxForm.hide = true;
                 this.$.atFormAjaxSchemaActivity.generateRequest();
             }
         },
@@ -177,15 +184,21 @@
                             self.$.atFormAjaxRecordActivity.generateRequest();
                         }
                     } else {
-                        //Clear data from the form
-                        console.log("Clear form data");
-                        //self.$.atFormAjaxForm._internalData = {};
+                        self.$.btnWrapper.style.display = "block";
+                        self.$.atFormAjaxForm.hide = false;
+                        //TODO Show form here
                     }
                 }
             });
 
             this.$.atFormAjaxRecordActivity.addEventListener("response", function (e) {
                 self.$.atFormAjaxForm.data = e.detail.Data;
+                //If form is in the read mode, submit button should not be displayed
+                if (self.mode != "r") {
+                    self.$.btnWrapper.style.display = "block";
+                }
+                self.$.atFormAjaxForm.hide = false;
+                //TODO Show form here
             });
 
             this.$.atFormAjaxActivity.addEventListener("response", function (e) {
@@ -202,7 +215,12 @@
             });
 
             this.$.atFormAjaxForm.addEventListener("at-core-form-rendered", function () {
-                self.$.btnWrapper.style.display = "block";
+                //Show submit button only if form is in create mode
+                //If it is in update mode it will be shown later in the process
+                //After the data is obtained and form filled with it
+                if (self.mode == "c") {
+                    self.$.btnWrapper.style.display = "block";
+                }
             });
 
             this.$.atFormAjaxForm.addEventListener("data-changed", function (e) {
@@ -223,7 +241,10 @@
                 if (self.postMode.toLowerCase() == "formdata") {
                     postData = new FormData();
 
-                    postData.append("id", self.recordId);
+                    //RecordId should be passed only if form is in update mode
+                    if (self.mode == "u") {
+                        postData.append("id", self.recordId);
+                    }
 
                     for (var key in self.schema.properties) {
                         if (self.schema.properties.hasOwnProperty(key)) {
@@ -236,7 +257,10 @@
                 } else {
                     self.$.atFormAjaxActivity.contentType = "application/json;odata=verbose";
 
-                    postData["id"] = self.recordId;
+                    //RecordId should be passed only if form is in update mode
+                    if (self.mode == "u") {
+                        postData["id"] = self.recordId;
+                    }
 
                     for (var key in self.schema.properties) {
                         if (self.schema.properties.hasOwnProperty(key)) {
