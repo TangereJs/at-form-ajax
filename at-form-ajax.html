@@ -172,8 +172,8 @@
                     self.url = e.detail.Data.form.url;
                     self.formDefinition = e.detail.Data.form; // save complete form definition as well
 
-                    //If mode != create we should fetch data, otherwise recordId is ignored
-                    if (self.mode != "c") {
+                    //If mode != create and recordId is provided we should fetch data, otherwise recordId is ignored
+                    if (self.mode != "c" && self.recordId) {
                         if (self.url && self.recordId) {
                             console.log("Fetch form data for item with ID: " + self.recordId);
                             var itemId = self.recordId;
