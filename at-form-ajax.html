@@ -37,7 +37,7 @@
     </style>
 
     <at-carbon-alert id="invalidMessage">Please correct the marked fields with error(s) before submitting the form.</at-carbon-alert>
-    <at-core-activity id="atFormAjaxSchemaActivity" url="{{schemaUrl}}" auto indicator></at-core-activity>
+    <at-core-activity id="atFormAjaxSchemaActivity" url="{{schemaUrl}}" indicator></at-core-activity>
     <at-core-activity id="atFormAjaxRecordActivity" indicator></at-core-activity>
     <at-core-activity id="atFormAjaxActivity" url="{{url}}" method="POST" indicator></at-core-activity>
     <at-core-form id="atFormAjaxForm"></at-core-form>
@@ -55,16 +55,14 @@
         is: "at-form-ajax",
         _scopeCssViaAttr: true,
         properties: {
-            _afterReady: {
-                type: Boolean
-            },
             url: {
                 type: String,
                 value: ""
             },
             schemaUrl: {
                 type: String,
-                value: ""
+                value: "",
+                observer: "schemaUrlChanged"
             },
             schema: {
                 type: Object,
@@ -81,7 +79,7 @@
             //u - update
             mode: {
                 type: String,
-                value: "u",
+                value: "c",
                 observer: "modeChanged"
             },
             formDefinition: {
@@ -101,7 +99,6 @@
             });
 
             this.$.btnWrapper.style.display = "none";
-            //TODO Hide form here
             this.$.atFormAjaxForm.hide = true;
             this.$.atFormAjaxForm.schema = newValue;
         },
@@ -109,6 +106,13 @@
         recordIdChanged: function (newValue, oldValue) {
             if (!this._afterReady) {
                 return;
+            }
+
+            if (!this.mode) {
+                //Mode (if not specified) is dependant on existance of recordId
+                //if recordId has value, mode is u-pdate
+                //if recordId has no value, mode is c-reate
+                this.mode = this.recordId ? "u" : "c";
             }
 
             if (this.url && newValue) {
@@ -126,6 +130,16 @@
             }
         },
 
+        schemaUrlChanged: function (newValue, oldValue) {
+            if (!this._afterReady) {
+                return;
+            }
+
+            if (newValue) {
+                this.generateSchemaRequest();
+            }
+        },
+
         modeChanged: function (newValue, oldValue) {
             if (!this._afterReady) {
                 return;
@@ -133,17 +147,41 @@
 
             if (newValue) {
                 this.mode = newValue.toLowerCase();
+            }
+
+            if (!this.mode) {
+                //Mode (if not specified) is dependant on existance of recordId
+                //if recordId has value, mode is u-pdate
+                //if recordId has no value, mode is c-reate
+                this.mode = this.recordId ? "u" : "c";
+            }
+
+            this.generateSchemaRequest();
+        },
+
+        generateSchemaRequest: function () {
+            if (this.schemaUrl && this.mode) {
 
                 this.$.btnWrapper.style.display = "none";
                 this.$.atFormAjaxForm.hide = true;
+
+                this.$.atFormAjaxSchemaActivity.url = this.schemaUrl;
+                this.$.atFormAjaxSchemaActivity.params["mode"] = this.mode;
+
                 this.$.atFormAjaxSchemaActivity.generateRequest();
             }
         },
 
         ready: function () {
             this._afterReady = true;
-
             var self = this;
+
+            //Initially, mode (if not specified) is dependant on existance of recordId
+            //if recordId has value, mode is u-pdate
+            //if recordId has no value, mode is c-reate
+            this.mode = this.recordId ? "u" : "c";
+
+            this.generateSchemaRequest();
 
             this.$.atFormAjaxSchemaActivity.addEventListener("response", function (e) {
                 if (e.detail.ErrorCode == 0) {
@@ -186,7 +224,6 @@
                     } else {
                         self.$.btnWrapper.style.display = "block";
                         self.$.atFormAjaxForm.hide = false;
-                        //TODO Show form here
                     }
                 }
             });
@@ -198,7 +235,6 @@
                     self.$.btnWrapper.style.display = "block";
                 }
                 self.$.atFormAjaxForm.hide = false;
-                //TODO Show form here
             });
 
             this.$.atFormAjaxActivity.addEventListener("response", function (e) {
@@ -238,7 +274,18 @@
                 self.$.atFormAjaxForm.disabled = true;
                 self.$.btnSubmitForm.disabled = true;
 
-                if (self.postMode.toLowerCase() == "formdata") {
+                var postMode = self.postMode.toLowerCase();
+                //We should check if user wants to upload files in this case
+                if (postMode != "formdata") {
+                    //Check if user selected files to upload
+                    if (Object.getOwnPropertyNames(self.$.atFormAjaxForm.files).length > 0) {
+                        //Some files are pending for upload, we should override postMode and use "formdata" mode
+                        postMode = "formdata";
+                    }
+                }
+
+                if (postMode == "formdata") {
+                    self.$.atFormAjaxActivity.contentType = "multipart/form-data";
                     postData = new FormData();
 
                     //RecordId should be passed only if form is in update mode
@@ -248,14 +295,24 @@
 
                     for (var key in self.schema.properties) {
                         if (self.schema.properties.hasOwnProperty(key)) {
-                            postData.append(key, self.$.atFormAjaxForm.data[key]);
+                            var files = self.$.atFormAjaxForm.files[key];
+                            //If property is available then add files to the postData
+                            if (files) {
+                                for (var i = 0; i < files.length; i++) {
+                                    postData.append(files[i].name, files[i]);
+                                }
+                            } else {
+                                var data = self.$.atFormAjaxForm.data[key];
+                                //If has invalid property it is at-form-file and should be skipped
+                                if (!data.invalid) {
+                                    postData.append(key, data);
+                                }
+                            }
                         }
                     }
-
-                    //self.$.atFormAjaxActivity.contentType = null;
-
                 } else {
-                    self.$.atFormAjaxActivity.contentType = "application/json;odata=verbose";
+                    //self.$.atFormAjaxActivity.contentType = "application/json;odata=verbose";
+                    self.$.atFormAjaxActivity.contentType = "application/json";
 
                     //RecordId should be passed only if form is in update mode
                     if (self.mode == "u") {
@@ -264,7 +321,19 @@
 
                     for (var key in self.schema.properties) {
                         if (self.schema.properties.hasOwnProperty(key)) {
-                            postData[key] = self.$.atFormAjaxForm.data[key];
+                            var files = self.$.atFormAjaxForm.files[key];
+                            //If property is available then add files to the postData
+                            if (files) {
+                                for (var i = 0; i < files.length; i++) {
+                                    postData[files[i].name] = files[i];
+                                }
+                            } else {
+                                var data = self.$.atFormAjaxForm.data[key];
+                                //If has invalid property it is at-form-file and should be skipped
+                                if (!data.invalid) {
+                                    postData[key] = self.$.atFormAjaxForm.data[key];
+                                }
+                            }
                         }
                     }
                 }
