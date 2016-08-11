@@ -302,14 +302,15 @@
                             //If property is available then add files to the postData
                             if (files) {
                                 for (var i = 0; i < files.length; i++) {
-                                    postData.append(files[i].name, files[i]);
+                                    postData.append(key + "_" + files[i].name, files[i]);
                                 }
                             } else {
-                                var data = self.$.atFormAjaxForm.data[key];
-                                //If has invalid property it is at-form-file and should be skipped
-                                if (!data.invalid) {
-                                    postData.append(key, data);
-                                }
+                                //var data = self.$.atFormAjaxForm.data[key];
+                                ////If has invalid property it is at-form-file and should be skipped, else should be appended to the postData object
+                                //if (data.invalid === undefined) {
+                                //    postData.append(key, data);
+                                //}
+                                postData.append(key, self.$.atFormAjaxForm.data[key]);
                             }
                         }
                     }
