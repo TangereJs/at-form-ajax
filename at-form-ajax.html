@@ -321,19 +321,7 @@
 
                     for (var key in self.schema.properties) {
                         if (self.schema.properties.hasOwnProperty(key)) {
-                            var files = self.$.atFormAjaxForm.files[key];
-                            //If property is available then add files to the postData
-                            if (files) {
-                                for (var i = 0; i < files.length; i++) {
-                                    postData[files[i].name] = files[i];
-                                }
-                            } else {
-                                var data = self.$.atFormAjaxForm.data[key];
-                                //If has invalid property it is at-form-file and should be skipped
-                                if (!data.invalid) {
-                                    postData[key] = self.$.atFormAjaxForm.data[key];
-                                }
-                            }
+                            postData[key] = self.$.atFormAjaxForm.data[key];
                         }
                     }
                 }
