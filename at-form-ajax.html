@@ -165,6 +165,9 @@
                 this.$.btnWrapper.style.display = "none";
                 this.$.atFormAjaxForm.hide = true;
 
+                //Clean up record error message, if there is any
+                this.$.atFormAjaxRecordActivity.$.msg.html = "";
+
                 this.$.atFormAjaxSchemaActivity.url = this.schemaUrl;
                 this.$.atFormAjaxSchemaActivity.params["mode"] = this.mode;
 
