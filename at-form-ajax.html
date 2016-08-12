@@ -291,9 +291,12 @@
                     self.$.atFormAjaxActivity.contentType = "multipart/form-data";
                     postData = new FormData();
 
+                    var json = {};
+
                     //RecordId should be passed only if form is in update mode
                     if (self.mode == "u") {
-                        postData.append("id", self.recordId);
+                        //postData.append("id", self.recordId);
+                        json["id"] = self.recordId;
                     }
 
                     for (var key in self.schema.properties) {
@@ -310,10 +313,16 @@
                                 //if (data.invalid === undefined) {
                                 //    postData.append(key, data);
                                 //}
-                                postData.append(key, self.$.atFormAjaxForm.data[key]);
+
+
+                                //postData.append(key, self.$.atFormAjaxForm.data[key]);
+                                json[key] = self.$.atFormAjaxForm.data[key];
                             }
                         }
                     }
+
+                    postData.append("json", JSON.stringify(json));
+
                 } else {
                     //self.$.atFormAjaxActivity.contentType = "application/json;odata=verbose";
                     self.$.atFormAjaxActivity.contentType = "application/json";
