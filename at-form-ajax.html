@@ -322,8 +322,6 @@
                             //After the last change in at-form-file we send both files and data object with it ( containing deleted, current, valid and invalid properties )
                             json[key] = self.$.atFormAjaxForm.data[key];
                         }
-
-                        console.log(json);
                     }
 
                     postData.append("json", JSON.stringify(json));
