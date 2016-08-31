@@ -1,10 +1,12 @@
 <link rel="import" href="../tangere/tangere.html">
 <link rel="import" href="../at-theme/at-theme.html">
-<link rel="import" href="../at-core-form/at-core-form.html">
 <link rel="import" href="../at-core-activity/at-core-activity.html">
-<link rel="import" href="../at-carbon-icon/at-carbon-icon.html">
-<link rel="import" href="../at-carbon-alert/at-carbon-alert.html">
+<link rel="import" href="../at-core-form/at-core-form.html">
+<link rel="import" href="../at-core-spinner/at-core-spinner.html">
 <link rel="import" href="../at-carbon-action-button/at-carbon-action-button.html">
+<link rel="import" href="../at-carbon-alert/at-carbon-alert.html">
+<link rel="import" href="../at-carbon-icon/at-carbon-icon.html">
+<link rel="import" href="../at-core-signals/at-core-signals.html">
 
 <dom-module id="at-form-ajax">
   <template>
@@ -36,9 +38,10 @@
       }
     </style>
 
+    <at-core-spinner id="spinner" type="wave" display="none"></at-core-spinner>
     <at-carbon-alert id="invalidMessage">Please correct the marked fields with error(s) before submitting the form.</at-carbon-alert>
-    <at-core-activity id="atFormAjaxSchemaActivity" url="{{schemaUrl}}" indicator></at-core-activity>
-    <at-core-activity id="atFormAjaxRecordActivity" indicator></at-core-activity>
+    <at-core-activity id="atFormAjaxSchemaActivity" url="{{schemaUrl}}"></at-core-activity>
+    <at-core-activity id="atFormAjaxRecordActivity"></at-core-activity>
     <at-core-activity id="atFormAjaxActivity" url="{{url}}" method="POST" indicator></at-core-activity>
     <at-core-form id="atFormAjaxForm"></at-core-form>
 
@@ -128,6 +131,9 @@
 
         this.$.atFormAjaxRecordActivity.url = this.url + itemId;
         this.$.atFormAjaxRecordActivity.generateRequest();
+
+        this.$.spinner.display = "block";
+        Polymer.signal("busy-start");
       }
     },
 
@@ -174,6 +180,9 @@
         this.$.atFormAjaxSchemaActivity.params["mode"] = this.mode;
 
         this.$.atFormAjaxSchemaActivity.generateRequest();
+
+        this.$.spinner.display = "block";
+        Polymer.signal("busy-start");
       }
     },
 
@@ -225,28 +234,43 @@
               }
               self.$.atFormAjaxRecordActivity.url = self.url + itemId;
               self.$.atFormAjaxRecordActivity.generateRequest();
+
+              self.$.spinner.display = "block";
+              Polymer.signal("busy-start");
             }
           } else {
 
             // delay form showing or rendering to avoid FOUC IE11 and Safari
+            Polymer.dom.flush();
             this.async(function () {
               self.$.atFormAjaxForm.hide = false;
               self.$.btnWrapper.style.display = "block";
+              self.$.spinner.display = "none";
+              Polymer.signal("busy-end");
             });
-
           }
         }
       });
 
+      this.$.atFormAjaxSchemaActivity.addEventListener("discard-request", function (e) {
+          Polymer.signal("busy-end");
+      });
+
       this.$.atFormAjaxRecordActivity.addEventListener("response", function (e) {
         self.$.atFormAjaxForm.data = e.detail.Data;
-        //If form is in the read mode, submit button should not be displayed
-        if (self.mode != "r") {
-          self.$.btnWrapper.style.display = "block";
-        }
 
         self.$.atFormAjaxForm.hide = false;
+        self.$.spinner.display = "none";
+        Polymer.signal("busy-end");
 
+        //If form is in the read mode, submit button should not be displayed
+        if (self.mode != "r") {
+            self.$.btnWrapper.style.display = "block";
+        }
+      });
+
+      this.$.atFormAjaxRecordActivity.addEventListener("discard-request", function (e) {
+          Polymer.signal("busy-end");
       });
 
       this.$.atFormAjaxActivity.addEventListener("response", function (e) {
@@ -259,6 +283,7 @@
           self.recordId = e.detail.Data.id;
         }
 
+        Polymer.signal("busy-end");
         //self.$.btnSubmitForm.disabled = !self.$.atFormAjaxForm.valid;
       });
 
@@ -267,7 +292,9 @@
         //If it is in update mode it will be shown later in the process
         //After the data is obtained and form filled with it
         if (self.mode == "c") {
-          self.$.btnWrapper.style.display = "block";
+            self.$.btnWrapper.style.display = "block";
+            self.$.spinner.display = "none";
+            Polymer.signal("busy-end");
         }
       });
 
@@ -354,6 +381,8 @@
         //self.$.atFormAjaxActivity.params = null;
         self.$.atFormAjaxActivity.body = postData;
         self.$.atFormAjaxActivity.generateRequest();
+
+        Polymer.signal("busy-start");
       });
 
       //this.$.btnSubmitForm.disabled = true;
