@@ -249,7 +249,12 @@
               Polymer.signal("busy-end");
             });
           }
-        }
+        } 
+      });
+
+      this.$.atFormAjaxSchemaActivity.addEventListener("error", function (e) {
+          self.$.spinner.display = "none";
+          Polymer.signal("busy-end");
       });
 
       this.$.atFormAjaxSchemaActivity.addEventListener("discard-request", function (e) {
