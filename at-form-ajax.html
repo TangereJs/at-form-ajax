@@ -40,357 +40,339 @@
 
     <at-core-spinner id="spinner" type="wave" display="none"></at-core-spinner>
     <at-carbon-alert id="invalidMessage">Please correct the marked fields with error(s) before submitting the form.</at-carbon-alert>
-    <at-core-activity id="atFormAjaxSchemaActivity" url="{{schemaUrl}}"></at-core-activity>
-    <at-core-activity id="atFormAjaxRecordActivity"></at-core-activity>
-    <at-core-activity id="atFormAjaxActivity" url="{{url}}" method="POST" indicator></at-core-activity>
-    <at-core-form id="atFormAjaxForm"></at-core-form>
+    <at-core-activity id="atFormAjaxSchemaActivity" url="{{schemaUrl}}" on-response="handleAjaxSchemaResponse" on-discard="handleRequestDiscard" on-error="handleRequestError"></at-core-activity>
+    <at-core-activity id="atFormAjaxRecordActivity" on-response="handleAjaxRecordResponse" on-discard="handleRequestDiscard" on-error="handleRequestError"></at-core-activity>
+    <at-core-activity id="atFormAjaxActivity" url="{{url}}" method="POST" on-response="handleAjaxPostResponse" on-discard="handleRequestDiscard" on-error="handleRequestError"></at-core-activity>
+    <at-core-form id="atFormAjaxForm" on-at-core-form-rendered="handleFormRendered"></at-core-form>
 
     <div id="btnWrapper" class="button-wrapper" style="display:none">
       <!--<button id="btnSubmitForm" type="button"><at-carbon-icon icon="now:checkmark"></at-carbon-icon></button>-->
-      <at-carbon-action-button id="btnSubmitForm" xtype="submit"></at-carbon-action-button>
+        <at-carbon-action-button id="btnSubmitForm" xtype="submit" on-tap="handleFormSubmit"></at-carbon-action-button>
     </div>
   </template>
 </dom-module>
 
 <script>
   // On POST response, component will fire "at-form-ajax-post-response" event with e.detail as a value
-  Polymer({
-    is: "at-form-ajax",
-    _scopeCssViaAttr: true,
-    properties: {
-      url: {
-        type: String,
-        value: ""
-      },
-      schemaUrl: {
-        type: String,
-        value: "",
-        observer: "schemaUrlChanged"
-      },
-      schema: {
-        type: Object,
-        observer: "schemaChanged"
-      },
-      recordId: {
-        type: String,
-        value: "",
-        observer: 'recordIdChanged'
-      },
-      //Possible values: r, c, u
-      //r - read
-      //c - create
-      //u - update
-      mode: {
-        type: String,
-        value: "c",
-        observer: "modeChanged"
-      },
-      formDefinition: {
-        type: Object
-      },
-      //Post Mode should be either json or formdata
-      //default value is json
-      postMode: {
-        type: String,
-        value: "json"
-      }
-    },
-
-    schemaChanged: function (newValue, oldValue) {
-      this.fire("at-form-ajax-schema-changed", {
-        schema: newValue
-      });
-
-      this.$.btnWrapper.style.display = "none";
-      this.$.atFormAjaxForm.hide = true;
-
-      this.$.atFormAjaxForm.schema = newValue;
-    },
-
-    recordIdChanged: function (newValue, oldValue) {
-      if (!this._afterReady) {
-        return;
-      }
-
-      if (!this.mode) {
-        //Mode (if not specified) is dependant on existance of recordId
-        //if recordId has value, mode is u-pdate
-        //if recordId has no value, mode is c-reate
-        this.mode = this.recordId ? "u" : "c";
-      }
-
-      if (this.url && newValue) {
-
-        itemId = newValue;
-        if (!this.url.endsWith("/")) {
-          itemId = "/" + itemId;
-        }
-
-        this.$.btnWrapper.style.display = "none";
-        this.$.atFormAjaxForm.hide = true;
-
-        this.$.atFormAjaxRecordActivity.url = this.url + itemId;
-        this.$.atFormAjaxRecordActivity.generateRequest();
-
-        this.$.spinner.display = "block";
-        Polymer.signal("busy-start");
-      }
-    },
-
-    schemaUrlChanged: function (newValue, oldValue) {
-      if (!this._afterReady) {
-        return;
-      }
-
-      if (newValue) {
-        this.generateSchemaRequest();
-      }
-    },
-
-    modeChanged: function (newValue, oldValue) {
-      if (!this._afterReady) {
-        return;
-      }
-
-      if (newValue) {
-        this.mode = newValue.toLowerCase();
-      }
-
-      if (!this.mode) {
-        //Mode (if not specified) is dependant on existance of recordId
-        //if recordId has value, mode is u-pdate
-        //if recordId has no value, mode is c-reate
-        this.mode = this.recordId ? "u" : "c";
-      }
-
-      this.generateSchemaRequest();
-    },
-
-    generateSchemaRequest: function () {
-      if (this.schemaUrl && this.mode) {
-
-        this.$.btnWrapper.style.display = "none";
-
-        this.$.atFormAjaxForm.hide = true;
-
-        //Clean up record error message, if there is any
-        this.$.atFormAjaxRecordActivity.$.msg.html = "";
-
-        this.$.atFormAjaxSchemaActivity.url = this.schemaUrl;
-        this.$.atFormAjaxSchemaActivity.params["mode"] = this.mode;
-
-        this.$.atFormAjaxSchemaActivity.generateRequest();
-
-        this.$.spinner.display = "block";
-        Polymer.signal("busy-start");
-      }
-    },
-
-    ready: function () {
-      this._afterReady = true;
-      var self = this;
-
-      //Initially, mode (if not specified) is dependant on existance of recordId
-      //if recordId has value, mode is u-pdate
-      //if recordId has no value, mode is c-reate
-      this.mode = this.recordId ? "u" : "c";
-
-      this.generateSchemaRequest();
-
-      this.$.atFormAjaxSchemaActivity.addEventListener("response", function (e) {
-        if (e.detail.ErrorCode == 0) {
-          //Form should be disabled if mode is set to read
-          self.$.atFormAjaxForm.disabled = self.mode === "r";
-
-          if (self.mode == "c" || self.mode == "u") {
-            //JS passes object ( schema.properties ) by reference,
-            //all changes made in this block will reflect to e.detail.Data.form.schema.properties
-            var schemaProperties = e.detail.Data.form.schema.properties;
-            if (schemaProperties) {
-              for (var property in schemaProperties) {
-                if (schemaProperties.hasOwnProperty(property) && schemaProperties[property].readOnly) {
-                  delete schemaProperties[property];
-
-                  //Faster way to do the same job, but currently not working as at-core-form can't handle undefined properties
-                  //schema.properties[property] = undefined;
-                }
-              }
+    Polymer({
+        is: "at-form-ajax",
+        _scopeCssViaAttr: true,
+        properties: {
+            url: {
+                type: String,
+                value: ""
+            },
+            schemaUrl: {
+                type: String,
+                value: "",
+                observer: "schemaUrlChanged"
+            },
+            schema: {
+                type: Object,
+                observer: "schemaChanged"
+            },
+            recordId: {
+                type: String,
+                value: "",
+                observer: 'recordIdChanged'
+            },
+            //Possible values: r, c, u
+            //r - read
+            //c - create
+            //u - update
+            mode: {
+                type: String,
+                value: "c",
+                observer: "modeChanged"
+            },
+            formDefinition: {
+                type: Object
+            },
+            //Post Mode should be either json or formdata
+            //default value is json
+            postMode: {
+                type: String,
+                value: "json"
             }
-          }
+        },
 
-          //This line here is required so it can reset form data
-          self.$.atFormAjaxForm._internalData = {};
-          self.schema = e.detail.Data.form.schema;
-          self.url = e.detail.Data.form.url;
-          self.formDefinition = e.detail.Data.form; // save complete form definition as well
-
-          //If mode != create and recordId is provided we should fetch data, otherwise recordId is ignored
-          if (self.mode != "c" && self.recordId) {
-            if (self.url && self.recordId) {
-              console.log("Fetch form data for item with ID: " + self.recordId);
-              var itemId = self.recordId;
-              if (!self.url.endsWith("/")) {
-                itemId = "/" + itemId;
-              }
-              self.$.atFormAjaxRecordActivity.url = self.url + itemId;
-              self.$.atFormAjaxRecordActivity.generateRequest();
-
-              self.$.spinner.display = "block";
-              Polymer.signal("busy-start");
-            }
-          } else {
-
-            // delay form showing or rendering to avoid FOUC IE11 and Safari
-            Polymer.dom.flush();
-            this.async(function () {
-              self.$.atFormAjaxForm.hide = false;
-              self.$.btnWrapper.style.display = "block";
-              self.$.spinner.display = "none";
-              Polymer.signal("busy-end");
+        schemaChanged: function (newValue, oldValue) {
+            this.fire("at-form-ajax-schema-changed", {
+                schema: newValue
             });
-          }
-        } 
-      });
 
-      this.$.atFormAjaxSchemaActivity.addEventListener("error", function (e) {
-          self.$.spinner.display = "none";
-          Polymer.signal("busy-end");
-      });
+            this.$.btnWrapper.style.display = "none";
+            this.$.atFormAjaxForm.hide = true;
 
-      this.$.atFormAjaxSchemaActivity.addEventListener("discard-request", function (e) {
-          Polymer.signal("busy-end");
-      });
+            this.$.atFormAjaxForm.schema = newValue;
+        },
 
-      this.$.atFormAjaxRecordActivity.addEventListener("response", function (e) {
-        self.$.atFormAjaxForm.data = e.detail.Data;
+        recordIdChanged: function (newValue, oldValue) {
+            if (!this._afterReady) {
+                return;
+            }
 
-        self.$.atFormAjaxForm.hide = false;
-        self.$.spinner.display = "none";
-        Polymer.signal("busy-end");
+            if (!this.mode) {
+                //Mode (if not specified) is dependant on existance of recordId
+                //if recordId has value, mode is u-pdate
+                //if recordId has no value, mode is c-reate
+                this.mode = this.recordId ? "u" : "c";
+            }
 
-        //If form is in the read mode, submit button should not be displayed
-        if (self.mode != "r") {
-            self.$.btnWrapper.style.display = "block";
-        }
-      });
+            if (this.url && newValue) {
 
-      this.$.atFormAjaxRecordActivity.addEventListener("discard-request", function (e) {
-          Polymer.signal("busy-end");
-      });
-
-      this.$.atFormAjaxActivity.addEventListener("response", function (e) {
-        self.fire("at-form-ajax-post-response", {
-          value: e.detail
-        });
-        self.$.atFormAjaxForm.disabled = false;
-
-        if (e.detail.ErrorCode == 0) {
-          self.recordId = e.detail.Data.id;
-        }
-
-        Polymer.signal("busy-end");
-        //self.$.btnSubmitForm.disabled = !self.$.atFormAjaxForm.valid;
-      });
-
-      this.$.atFormAjaxForm.addEventListener("at-core-form-rendered", function () {
-        //Show submit button only if form is in create mode
-        //If it is in update mode it will be shown later in the process
-        //After the data is obtained and form filled with it
-        if (self.mode == "c") {
-            self.$.btnWrapper.style.display = "block";
-            self.$.spinner.display = "none";
-            Polymer.signal("busy-end");
-        }
-      });
-
-      this.$.atFormAjaxForm.addEventListener("data-changed", function (e) {
-        // self.$.btnSubmitForm.disabled = !this.valid;
-      });
-
-      this.$.btnSubmitForm.addEventListener("tap", function (e) {
-
-        if (!self.$.atFormAjaxForm.validate()) {
-          self.$.invalidMessage.open();
-          return;
-        }
-
-        var postData = {};
-        self.$.atFormAjaxForm.disabled = true;
-        self.$.btnSubmitForm.disabled = true;
-
-        var postMode = self.postMode.toLowerCase();
-        //We should check if user wants to upload files in this case
-        if (postMode != "formdata") {
-          //Check if user selected files to upload
-          if (Object.getOwnPropertyNames(self.$.atFormAjaxForm.files).length > 0) {
-            //Some files are pending for upload, we should override postMode and use "formdata" mode
-            postMode = "formdata";
-          }
-        }
-
-        if (postMode == "formdata") {
-          self.$.atFormAjaxActivity.contentType = "multipart/form-data";
-          postData = new FormData();
-
-          var json = {};
-
-          //RecordId should be passed only if form is in update mode
-          if (self.mode == "u") {
-            //postData.append("id", self.recordId);
-            json["id"] = self.recordId;
-          }
-
-          for (var key in self.schema.properties) {
-            if (self.schema.properties.hasOwnProperty(key)) {
-              var files = self.$.atFormAjaxForm.files[key];
-              //If property is available then add files to the postData
-              if (files) {
-                for (var i = 0; i < files.length; i++) {
-                  postData.append(key + "_" + files[i].name, files[i]);
+                itemId = newValue;
+                if (!this.url.endsWith("/")) {
+                    itemId = "/" + itemId;
                 }
-              } else {
-                //var data = self.$.atFormAjaxForm.data[key];
-                ////If has invalid property it is at-form-file and should be skipped, else should be appended to the postData object
-                //if (data.invalid === undefined) {
-                //    postData.append(key, data);
-                //}
 
+                this.$.btnWrapper.style.display = "none";
+                this.$.atFormAjaxForm.hide = true;
 
-                //postData.append(key, self.$.atFormAjaxForm.data[key]);
-                //json[key] = self.$.atFormAjaxForm.data[key];
-              }
+                this.$.atFormAjaxRecordActivity.url = this.url + itemId;
+                this.$.atFormAjaxRecordActivity.generateRequest();
 
-              //After the last change in at-form-file we send both files and data object with it ( containing deleted, current, valid and invalid properties )
-              json[key] = self.$.atFormAjaxForm.data[key];
+                this.$.spinner.display = "block";
+                Polymer.signal("busy-start");
             }
-          }
+        },
 
-          postData.append("json", JSON.stringify(json));
-
-        } else {
-          //self.$.atFormAjaxActivity.contentType = "application/json;odata=verbose";
-          self.$.atFormAjaxActivity.contentType = "application/json";
-
-          //RecordId should be passed only if form is in update mode
-          if (self.mode == "u") {
-            postData["id"] = self.recordId;
-          }
-
-          for (var key in self.schema.properties) {
-            if (self.schema.properties.hasOwnProperty(key)) {
-              postData[key] = self.$.atFormAjaxForm.data[key];
+        schemaUrlChanged: function (newValue, oldValue) {
+            if (!this._afterReady) {
+                return;
             }
-          }
+
+            if (newValue) {
+                this.generateSchemaRequest();
+            }
+        },
+
+        modeChanged: function (newValue, oldValue) {
+            if (!this._afterReady) {
+                return;
+            }
+
+            if (newValue) {
+                this.mode = newValue.toLowerCase();
+            }
+
+            if (!this.mode) {
+                //Mode (if not specified) is dependant on existance of recordId
+                //if recordId has value, mode is u-pdate
+                //if recordId has no value, mode is c-reate
+                this.mode = this.recordId ? "u" : "c";
+            }
+
+            this.generateSchemaRequest();
+        },
+
+        generateSchemaRequest: function () {
+            if (this.schemaUrl && this.mode) {
+
+                this.$.btnWrapper.style.display = "none";
+
+                this.$.atFormAjaxForm.hide = true;
+
+                //Clean up record error message, if there is any
+                this.$.atFormAjaxRecordActivity.$.msg.html = "";
+
+                this.$.atFormAjaxSchemaActivity.url = this.schemaUrl;
+                this.$.atFormAjaxSchemaActivity.params["mode"] = this.mode;
+
+                this.$.atFormAjaxSchemaActivity.generateRequest();
+
+                this.$.spinner.display = "block";
+                Polymer.signal("busy-start");
+            }
+        },
+
+        handleAjaxSchemaResponse: function (e) {
+            if (e.detail.ErrorCode == 0) {
+                //Form should be disabled if mode is set to read
+                this.$.atFormAjaxForm.disabled = this.mode === "r";
+
+                if (this.mode == "c" || this.mode == "u") {
+                    //JS passes object ( schema.properties ) by reference,
+                    //all changes made in this block will reflect to e.detail.Data.form.schema.properties
+                    var schemaProperties = e.detail.Data.form.schema.properties;
+                    if (schemaProperties) {
+                        for (var property in schemaProperties) {
+                            if (schemaProperties.hasOwnProperty(property) && schemaProperties[property].readOnly) {
+                                delete schemaProperties[property];
+
+                                //Faster way to do the same job, but currently not working as at-core-form can't handle undefined properties
+                                //schema.properties[property] = undefined;
+                            }
+                        }
+                    }
+                }
+
+                //This line here is required so it can reset form data
+                this.$.atFormAjaxForm._internalData = {};
+                this.schema = e.detail.Data.form.schema;
+                this.url = e.detail.Data.form.url;
+                this.formDefinition = e.detail.Data.form; // save complete form definition as well
+
+                //If mode != create and recordId is provided we should fetch data, otherwise recordId is ignored
+                if (this.mode != "c" && this.recordId) {
+                    if (this.url && this.recordId) {
+                        console.log("Fetch form data for item with ID: " + this.recordId);
+                        var itemId = this.recordId;
+                        if (!this.url.endsWith("/")) {
+                            itemId = "/" + itemId;
+                        }
+                        this.$.atFormAjaxRecordActivity.url = this.url + itemId;
+                        this.$.atFormAjaxRecordActivity.generateRequest();
+
+                        this.$.spinner.display = "block";
+                        Polymer.signal("busy-start");
+                    }
+                } else {
+                    // delay form showing or rendering to avoid FOUC IE11 and Safari
+                    Polymer.dom.flush();
+                    this.async(function () {
+                        this.$.atFormAjaxForm.hide = false;
+                        this.$.btnWrapper.style.display = "block";
+                        this.$.spinner.display = "none";
+                        Polymer.signal("busy-end");
+                    });
+                }
+            }
+        },
+
+        handleAjaxRecordResponse: function (e) {
+            this.$.atFormAjaxForm.data = e.detail.Data;
+
+            this.$.atFormAjaxForm.hide = false;
+            this.$.spinner.display = "none";
+            Polymer.signal("busy-end");
+
+            //If form is in the read mode, submit button should not be displayed
+            if (this.mode != "r") {
+                this.$.btnWrapper.style.display = "block";
+            }
+        },
+
+        handleAjaxPostResponse: function (e) {
+            this.fire("at-form-ajax-post-response", {
+                value: e.detail
+            });
+            this.$.atFormAjaxForm.disabled = false;
+
+            if (e.detail.ErrorCode == 0) {
+                this.recordId = e.detail.Data.id;
+            }
+
+            this.$.spinner.display = "none";
+            Polymer.signal("busy-end");
+            //this.$.btnSubmitForm.disabled = !this.$.atFormAjaxForm.valid;
+        },
+
+        handleFormRendered:function () {
+            //Show submit button only if form is in create mode
+            //If it is in update mode it will be shown later in the process
+            //After the data is obtained and form filled with it
+            if (this.mode == "c") {
+                this.$.btnWrapper.style.display = "block";
+                this.$.spinner.display = "none";
+                Polymer.signal("busy-end");
+            }
+        },
+
+        handleRequestDiscard:function(){
+            this.$.spinner.display = "none";
+            Polymer.signal("busy-end");
+        },
+
+        handleRequestError: function () {
+            this.$.spinner.display = "none";
+            Polymer.signal("busy-end");
+        },
+
+        handleFormSubmit:function (e) {
+
+            if (!this.$.atFormAjaxForm.validate()) {
+                this.$.invalidMessage.open();
+                return;
+            }
+
+            var postData = {};
+            this.$.atFormAjaxForm.disabled = true;
+            this.$.btnSubmitForm.disabled = true;
+
+            var postMode = this.postMode.toLowerCase();
+            //We should check if user wants to upload files in this case
+            if (postMode != "formdata") {
+                //Check if user selected files to upload
+                if (Object.getOwnPropertyNames(this.$.atFormAjaxForm.files).length > 0) {
+                    //Some files are pending for upload, we should override postMode and use "formdata" mode
+                    postMode = "formdata";
+                }
+            }
+
+            if (postMode == "formdata") {
+                this.$.atFormAjaxActivity.contentType = "multipart/form-data";
+                postData = new FormData();
+
+                var json = {};
+
+                //RecordId should be passed only if form is in update mode
+                if (this.mode == "u") {
+                    json["id"] = this.recordId;
+                }
+
+                for (var key in this.schema.properties) {
+                    if (this.schema.properties.hasOwnProperty(key)) {
+
+                        console.log(key);
+                        console.log(this.$.atFormAjaxForm.data[key]);
+
+                        var files = this.$.atFormAjaxForm.files[key];
+                        //If property is available then add files to the postData
+                        if (files) {
+                            for (var i = 0; i < files.length; i++) {
+                                postData.append(key + "_" + files[i].name, files[i]);
+                            }
+                        }
+
+                        //After the last change in at-form-file we send both files and data object with it ( containing deleted, current, valid and invalid properties )
+                        json[key] = this.$.atFormAjaxForm.data[key];
+                    }
+                }
+
+                postData.append("json", JSON.stringify(json));
+
+            } else {
+                this.$.atFormAjaxActivity.contentType = "application/json";
+
+                //RecordId should be passed only if form is in update mode
+                if (this.mode == "u") {
+                    postData["id"] = this.recordId;
+                }
+
+                for (var key in this.schema.properties) {
+                    if (this.schema.properties.hasOwnProperty(key)) {
+                        postData[key] = this.$.atFormAjaxForm.data[key];
+                    }
+                }
+            }
+
+            this.$.atFormAjaxActivity.body = postData;
+            this.$.atFormAjaxActivity.generateRequest();
+
+            this.$.spinner.display = "block";
+            Polymer.signal("busy-start");
+        },
+
+        ready: function () {
+            this._afterReady = true
+
+            //Initially, mode (if not specified) is dependant on existance of recordId
+            //if recordId has value, mode is u-pdate
+            //if recordId has no value, mode is c-reate
+            this.mode = this.recordId ? "u" : "c";
+
+            this.generateSchemaRequest();
         }
-
-        //self.$.atFormAjaxActivity.params = null;
-        self.$.atFormAjaxActivity.body = postData;
-        self.$.atFormAjaxActivity.generateRequest();
-
-        Polymer.signal("busy-start");
-      });
-
-      //this.$.btnSubmitForm.disabled = true;
-    }
-  });
+    });
 </script>
