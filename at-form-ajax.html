@@ -230,9 +230,10 @@
                 } else {
                     // delay form showing or rendering to avoid FOUC IE11 and Safari
                     Polymer.dom.flush();
-                    this.async(function () {
+                    this.async(function () {                      
                         this.$.atFormAjaxForm.hide = false;
                         this.$.btnWrapper.style.display = "block";
+                        this.$.atFormAjaxForm.setFocus();
                         this.$.spinner.display = "none";
                         Polymer.signal("busy-end");
                     });
