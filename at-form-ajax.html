@@ -74,7 +74,8 @@
             recordId: {
                 type: String,
                 value: "",
-                observer: 'recordIdChanged'
+                observer: 'recordIdChanged',
+                notify: true
             },
             mode: {
                 type: String,
@@ -91,7 +92,8 @@
                     title: "Read",
                     value: "r"
                 }],
-                observer: "modeChanged"
+                observer: "modeChanged",
+                notify: true
             },
             //Post Mode should be either json or formdata
             //default value is json
@@ -104,6 +106,11 @@
         //Internal flag that will be used to control if the component is busy or not
         //It is used to know if signal busy-start / busy-end should be set
         _busy: false,
+
+        //We need these two flags to avoid creating get record data request
+        //when change of recordId and mode is caused by post data response
+        _postResponseIdChange: false,
+        _postResponseModeChange: false,
 
         schemaChanged: function (newValue, oldValue) {
             this.fire("at-form-ajax-schema-changed", {
@@ -118,6 +125,12 @@
 
         recordIdChanged: function (newValue, oldValue) {
             if (!this._afterReady) {
+                return;
+            }
+
+            //Avoid making get data request and reset flag as the change is caused by post data request
+            if (this._postResponseIdChange) {
+                this._postResponseIdChange = false;
                 return;
             }
 
@@ -161,6 +174,12 @@
 
         modeChanged: function (newValue, oldValue) {
             if (!this._afterReady) {
+                return;
+            }
+
+            //Avoid making get data request and reset flag as the change is caused by post data request
+            if (this._postResponseModeChange) {
+                this._postResponseModeChange = false;
                 return;
             }
 
@@ -285,7 +304,17 @@
             this.$.atFormAjaxForm.disabled = false;
 
             if (e.detail.ErrorCode == 0) {
-                this.recordId = e.detail.Data.id;
+                //Change recordID only if the new one is different from the old one
+                if (e.detail.Data.id && this.recordId && this.recordId != e.detail.Data.id) {
+                    this._postResponseIdChange = true;
+                    this.recordId = e.detail.Data.id;
+                }
+
+                //Change mode to update only if it's already not an update mode
+                if (this.mode != "u") {
+                    this._postResponseModeChange = true;
+                    this.mode = "u";
+                }
             }
 
             this.$.spinner.display = "none";
@@ -293,7 +322,8 @@
                 Polymer.signal("busy-end");
                 this._busy = false;
             }
-            //this.$.btnSubmitForm.disabled = !this.$.atFormAjaxForm.valid;
+
+            this.$.btnSubmitForm.disabled = !this.$.atFormAjaxForm.valid;
         },
 
         handleFormRendered:function () {
