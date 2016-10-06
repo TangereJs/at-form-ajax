@@ -305,7 +305,7 @@
 
             if (e.detail.ErrorCode == 0) {
                 //Change recordID only if the new one is different from the old one
-                if (e.detail.Data.id && this.recordId && this.recordId != e.detail.Data.id) {
+                if (e.detail.Data.id && (!this.recordId || this.recordId != e.detail.Data.id)) {
                     this._postResponseIdChange = true;
                     this.recordId = e.detail.Data.id;
                 }
