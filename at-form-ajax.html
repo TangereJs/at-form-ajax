@@ -110,7 +110,6 @@
         //We need these two flags to avoid creating get record data request
         //when change of recordId and mode is caused by post data response
         _postResponseIdChange: false,
-        _postResponseModeChange: false,
 
         schemaChanged: function (newValue, oldValue) {
             this.fire("at-form-ajax-schema-changed", {
@@ -174,12 +173,6 @@
 
         modeChanged: function (newValue, oldValue) {
             if (!this._afterReady) {
-                return;
-            }
-
-            //Avoid making get data request and reset flag as the change is caused by post data request
-            if (this._postResponseModeChange) {
-                this._postResponseModeChange = false;
                 return;
             }
 
@@ -312,7 +305,6 @@
 
                 //Change mode to update only if it's already not an update mode
                 if (this.mode != "u") {
-                    this._postResponseModeChange = true;
                     this.mode = "u";
                 }
             }
