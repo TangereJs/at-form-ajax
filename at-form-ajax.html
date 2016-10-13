@@ -197,8 +197,10 @@
 
                 this.$.atFormAjaxForm.hide = true;
 
-                //Clean up record error message, if there is any
+                //Clean up error messages, if there is any
+                this.$.atFormAjaxSchemaActivity.$.msg.html = "";
                 this.$.atFormAjaxRecordActivity.$.msg.html = "";
+                this.$.atFormAjaxActivity.$.msg.html = "";
 
                 this.$.atFormAjaxSchemaActivity.url = this.schemaUrl;
                 this.$.atFormAjaxSchemaActivity.params["mode"] = this.mode;
@@ -275,6 +277,7 @@
         },
 
         handleAjaxRecordResponse: function (e) {
+            this.$.atFormAjaxForm.files = {};
             this.$.atFormAjaxForm.data = e.detail.Data;
 
             this.$.atFormAjaxForm.hide = false;
@@ -374,9 +377,6 @@
 
                 for (var key in this.schema.properties) {
                     if (this.schema.properties.hasOwnProperty(key)) {
-
-                        console.log(key);
-                        console.log(this.$.atFormAjaxForm.data[key]);
 
                         var files = this.$.atFormAjaxForm.files[key];
                         //If property is available then add files to the postData
