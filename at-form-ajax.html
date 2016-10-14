@@ -221,21 +221,22 @@
                 //Form should be disabled if mode is set to read
                 this.$.atFormAjaxForm.disabled = this.mode === "r";
 
-                if (this.mode == "c" || this.mode == "u") {
-                    //JS passes object ( schema.properties ) by reference,
-                    //all changes made in this block will reflect to e.detail.Data.form.schema.properties
-                    var schemaProperties = e.detail.Data.form.schema.properties;
-                    if (schemaProperties) {
-                        for (var property in schemaProperties) {
-                            if (schemaProperties.hasOwnProperty(property) && schemaProperties[property].readOnly) {
-                                delete schemaProperties[property];
+                ////Avoid rendering hidden/read-only fields
+                //if (this.mode == "c" || this.mode == "u") {
+                //    //JS passes object ( schema.properties ) by reference,
+                //    //all changes made in this block will reflect to e.detail.Data.form.schema.properties
+                //    var schemaProperties = e.detail.Data.form.schema.properties;
+                //    if (schemaProperties) {
+                //        for (var property in schemaProperties) {
+                //            if (schemaProperties.hasOwnProperty(property) && schemaProperties[property].readOnly) {
+                //                delete schemaProperties[property];
 
-                                //Faster way to do the same job, but currently not working as at-core-form can't handle undefined properties
-                                //schema.properties[property] = undefined;
-                            }
-                        }
-                    }
-                }
+                //                //Faster way to do the same job, but currently not working as at-core-form can't handle undefined properties
+                //                //schema.properties[property] = undefined;
+                //            }
+                //        }
+                //    }
+                //}
 
                 //This line here is required so it can reset form data
                 this.$.atFormAjaxForm._internalData = {};
