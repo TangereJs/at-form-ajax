@@ -43,7 +43,7 @@
     <at-core-activity id="atFormAjaxSchemaActivity" url="{{schemaUrl}}" on-response="handleAjaxSchemaResponse" on-error="handleRequestError"></at-core-activity>
     <at-core-activity id="atFormAjaxRecordActivity" on-response="handleAjaxRecordResponse" on-error="handleRequestError"></at-core-activity>
     <at-core-activity id="atFormAjaxActivity" url="{{url}}" method="POST" on-response="handleAjaxPostResponse" on-error="handleRequestError"></at-core-activity>
-    <at-core-form id="atFormAjaxForm" on-at-core-form-rendered="handleFormRendered"></at-core-form>
+    <at-core-form id="atFormAjaxForm" on-rendered="handleFormRendered"></at-core-form>
 
     <div id="btnWrapper" class="button-wrapper" style="display:none">
       <!--<button id="btnSubmitForm" type="button"><at-carbon-icon icon="now:checkmark"></at-carbon-icon></button>-->

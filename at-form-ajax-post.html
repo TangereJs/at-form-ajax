@@ -38,7 +38,7 @@
     <at-carbon-alert id="invalidMessage">Please correct the marked fields with error(s) before submitting the form.</at-carbon-alert>
     <at-core-activity id="atFormAjaxSchemaActivity" url="{{schemaUrl}}" auto indicator on-response="atFormAjaxSchemaActivityResponse"></at-core-activity>
     <at-core-activity id="atFormAjaxActivity" url="{{postUrl}}" method="POST" indicator on-response="atFormAjaxActivityResponse" on-error="atFormAjaxActivityError"></at-core-activity>
-    <at-core-form id="atFormAjaxForm" on-at-core-form-rendered="atFormAjaxFormRendered" on-data-changed="atFormAjaxFormDataChanged"></at-core-form>
+    <at-core-form id="atFormAjaxForm" on-rendered="atFormAjaxFormRendered" on-data-changed="atFormAjaxFormDataChanged"></at-core-form>
 
     <div id="btnWrapper" class="button-wrapper" style="display:none">
       <!--<button id="btnSubmitForm" type="button"><at-carbon-icon icon="now:checkmark"></at-carbon-icon></button>-->
