@@ -45,9 +45,8 @@
     <at-core-activity id="atFormAjaxActivity" url="{{url}}" method="POST" on-response="handleAjaxPostResponse" on-error="handleRequestError"></at-core-activity>
     <at-core-form id="atFormAjaxForm" on-rendered="handleFormRendered"></at-core-form>
 
-    <div id="btnWrapper" class="button-wrapper" style="display:none">
-      <!--<button id="btnSubmitForm" type="button"><at-carbon-icon icon="now:checkmark"></at-carbon-icon></button>-->
-        <at-carbon-action-button id="btnSubmitForm" xtype="submit" on-tap="handleFormSubmit"></at-carbon-action-button>
+    <div id="btnWrapper" class="button-wrapper" style="display:none">     
+      <at-carbon-action-button id="btnSubmitForm" xtype="submit" on-tap="handleFormSubmit"></at-carbon-action-button>
     </div>
   </template>
 </dom-module>
@@ -99,7 +98,15 @@
             //default value is json
             postMode: {
                 type: String,
-                value: "json"
+                value: "json",
+                xtype: "enum",
+                xvaluelist: [{
+                  title: "JSON",
+                  value: "json"
+                }, {
+                  title: "Formdata",
+                  value: "formdata"
+                }]
             }
         },
 
