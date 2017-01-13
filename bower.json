@@ -5,10 +5,13 @@
   "dependencies": {
     "tangere": "TangereJs/tangere#0.8-preview",
     "at-theme": "TangereJs/at-theme#0.8-preview",
-    "at-core-form": "TangereJs/at-core-form#0.8-preview",
     "at-core-activity": "TangereJs/at-core-activity#0.8-preview",
-    "at-carbon-icon": "TangereJs/at-carbon-icon#0.8-preview",
+    "at-core-form": "TangereJs/at-core-form#0.8-preview",
+    "at-core-spinner": "TangereJs/at-core-spinner#0.8-preview",
+    "at-carbon-action-button": "TangereJs/at-carbon-action-button#0.8-preview",
     "at-carbon-alert": "TangereJs/at-carbon-alert#0.8-preview",
-    "at-carbon-action-button": "TangereJs/at-carbon-action-button#0.8-preview"
+    "at-carbon-icon": "TangereJs/at-carbon-icon#0.8-preview",
+    "at-core-signals": "TangereJs/at-core-signals#0.8-preview",
+    "at-doc-viewer": "TangereJs/at-doc-viewer#0.8-preview"
   }
 }
