@@ -300,9 +300,21 @@
     },
 
     handleAjaxPostResponse: function (e) {
-      this.fire("at-form-ajax-post-response", {
+
+      var ev = this.fire("at-form-ajax-post-response", {
         value: e.detail
-      });
+      }, { cancelable: true });
+
+      // event handler stoped default behavior
+      if (ev.defaultPrevented) {
+        this.$.spinner.display = "none";
+        if (this._busy) {
+          Polymer.signal("busy-end");
+          this._busy = false;
+        }
+        return;
+      }
+
       this.$.Form.disabled = false;
 
       if (e.detail.ErrorCode == 0) {
